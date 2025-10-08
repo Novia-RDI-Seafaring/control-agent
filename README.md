@@ -1,13 +1,41 @@
 # mcp-fmi-ecc26
 
-Ziegler-Nichols Method implementation for First-Order Plus Dead Time (FOPDT) system analysis.
+## Experiment Setup
+We consider a **First-Order Plus Dead-Time (FOPDT)** system:
+
+$$
+G_\mathrm{p}(s) = \frac{K\,e^{-Ls}}{T s + 1}
+$$
+
+to which an ideal **PI controller** with output
+
+$$
+u(t) = K_\mathrm{p}\left( e(t) + \frac{1}{T_\mathrm{i}}\int_0^te(\tau)\mathrm{d}\tau \right)
+$$
+
+is to be tuned automatically using an **AI agent** that can perform simulated experiments. It has access to access to tools that:
+- Reads the model descriptions  
+- Designs input signals  
+- Sets model parameters  
+- Run simulations 
+
+Tools are provided through the [`mcp-fmi`](https://github.com/Novia-RDI-Seafaring/mcp-fmi) through the Model Context Protocol (MCP). 
+
+
+### Functional Mock-Up Unit
+The system and controller are packaged as a single **Functional Mock-up Unit (FMU)** that ahs the following two models
+- `manual`: The operator directly determines the control signal $u(t)$. This is, e.g., used when performing open-loop experiments.
+- `automatic`: The PI control law is active and the controller computes the control signal $u(t)$. This is the normal operating mode and also used when performing closed-loop experiments.
+
+
+
+
+---
 
 ## Features
-- **FOPDT System Modeling**: First-Order Plus Dead Time system representation
-- **Ziegler-Nichols Method**: Closed-loop ultimate gain method for controller tuning
-- **PI Controller Design**: Automatic calculation of PI controller parameters
-- **CLI Interface**: Command-line tool with individual parameter options
 
+- The package **`mcp-fmi-ecc26.zn`** contains methods that return *ground-truth tuning parameters* for the **Ziegler–Nichols** method.  
+- The package **`mcp-fmi-ecc26.lam`** contains methods that return *ground-truth tuning parameters* for the **Lambda-tuning** method.
 ## Installation
 
 ```bash
