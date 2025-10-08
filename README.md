@@ -33,6 +33,13 @@ The system and controller are packaged as a single **Functional Mock-up Unit (FM
 
 ### Lambda-Tuning Method
 
+The Lambda-tuning method is a model-based tuning approach that provides direct control over the closed-loop time constant. The method calculates PI controller parameters as:
+
+- **Proportional gain**: $K_p = \frac{T}{K(\lambda + L)}$
+- **Integral time**: $T_i = T$
+
+Where $\lambda$ (lambda) is the desired closed-loop time constant, typically set to 1-3 times the process dead time $L$.
+
 ## Installation
 ```bash
 # Clone and sync dependencies
@@ -45,12 +52,22 @@ uv sync
 
 ### Command Line Interface
 
+#### Ziegler-Nichols Method
 ```bash
-# Run with custom parameters
+# Ziegler-Nichols tuning
 uv run ecc26 --K 1.0 --T 1.0 --L 1.0 --method zn
 
 # Default method (zn)
 uv run ecc26 --K 2.0 --T 1.5 --L 0.5
+```
+
+#### Lambda-Tuning Method
+```bash
+# Lambda-tuning with default lambda=2.0
+uv run ecc26 --K 1.0 --T 1.0 --L 1.0 --method lam
+
+# Lambda-tuning with custom lambda=3.0
+uv run ecc26 --K 1.0 --T 1.0 --L 1.0 --method lam --lam 3.0
 
 # Get help
 uv run ecc26 --help
@@ -58,6 +75,7 @@ uv run ecc26 --help
 
 ### Python API
 
+#### Ziegler-Nichols Method
 ```python
 from mcp_fmi_ecc26 import FOPDT, ZieglerNicholsMethod
 
@@ -70,6 +88,34 @@ zn_method = ZieglerNicholsMethod(system)
 print(f"Ultimate Point: {zn_method.ultimate_point}")
 print(f"PI Controller: {zn_method.pi_controller}")
 ```
+
+#### Lambda-Tuning Method
+```python
+from mcp_fmi_ecc26 import FOPDT
+from mcp_fmi_ecc26.lam import LambdaTuningMethod
+
+# Create FOPDT system
+system = FOPDT(K=2.0, T=1.0, L=0.5)
+
+# Calculate Lambda-tuning parameters with default lambda=2.0
+lam_method = LambdaTuningMethod(system, lam=2.0)
+
+print(f"PI Controller: {lam_method.pi_controller}")
+print(f"Lambda Parameter: {lam_method.lam}")
+```
+
+## Parameters
+
+### System Parameters
+- **K**: Static process gain (output/input ratio)
+- **T**: Process time constant [s] (must be > 0)
+- **L**: Effective time delay [s] (must be ≥ 0)
+
+### Lambda Parameter (λ)
+The lambda parameter controls the closed-loop response speed:
+- **Small λ** (0.2-1 × T): Faster response, less robust
+- **Large λ** (1-3 × L): Slower response, more robust
+- **Default**: 2.0 (good balance for most systems)
 
 ## PI-controller tuning
 - The experiment prodecure for the Ziegler-Nichols closed-loop (ultimate gain) tuning method is outlined in [`docs/zn_method.md`](docs/zn_method.md)
