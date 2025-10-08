@@ -54,7 +54,7 @@ class ZieglerNicholsMethod:
     def __init__(self, sys_pars: FOPDT):
         self.sys_pars = sys_pars
         self.ultimate_point = self.get_ultimate_point()
-        self.pi_controller = self.get_ZN_PI()
+        self.pi_controller = self.zn_tuning()
 
     def _phase_balance(self, w: float) -> float:
         """phase condition f(ω) = ωL + atan(ωT) - π = 0"""
@@ -110,7 +110,7 @@ class ZieglerNicholsMethod:
 
         return UltimatePoint(K_u=K_u, P_u=P_u, omega_u=omega_u)
 
-    def get_ZN_PI(self):
+    def zn_tuning(self):
         """Get the Ziegler-Nichols PI controller parameters"""
         K_u = self.ultimate_point.K_u
         P_u = self.ultimate_point.P_u

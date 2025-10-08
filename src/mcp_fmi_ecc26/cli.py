@@ -1,5 +1,7 @@
 import typer
-from mcp_fmi_ecc26 import ZieglerNicholsMethod, FOPDT
+from mcp_fmi_ecc26.sys import FOPDT
+from mcp_fmi_ecc26 import ZieglerNicholsMethod
+from mcp_fmi_ecc26.lam import LambdaTuningMethod
 
 app = typer.Typer()
 
@@ -9,28 +11,39 @@ def main(
     K: float = typer.Option(..., "--K", help="Static process gain K"),
     T: float = typer.Option(..., "--T", help="Process time constant T"),
     L: float = typer.Option(..., "--L", help="Effective time delay L"),
-    method: str = typer.Option("zn", "--method", help="Tuning method (zn)"),
+    method: str = typer.Option("zn", "--method", help="Tuning method (zn, lam)"),
+    lam: float = typer.Option(2.0, "--lam", help="Lambda parameter for lambda-tuning (default: 2.0)"),
 ):
     """FOPDT system analysis CLI.
     
     System parameters: K (gain), T (time constant), L (time delay)
-    Methods: zn (Ziegler-Nichols)
+    Methods: zn (Ziegler-Nichols), lam (Lambda-tuning)
     """
     
-    if method.lower() != "zn":
-        typer.echo(f"Error: Unknown method '{method}'. Available: zn", err=True)
+    if method.lower() not in ["zn", "lam"]:
+        typer.echo(f"Error: Unknown method '{method}'. Available: zn, lam", err=True)
         raise typer.Exit(1)
     
     try:
         sys_pars = FOPDT(K=K, T=T, L=L)
-        zn_method = ZieglerNicholsMethod(sys_pars)
         
-        typer.echo("Ziegler-Nichols Method Results")
-        typer.echo("=" * 40)
-        typer.echo(f"System Parameters: K={K}, T={T}, L={L}")
-        typer.echo(f"Ultimate Point: {zn_method.ultimate_point}")
-        typer.echo(f"PI Controller: {zn_method.pi_controller}")
-        typer.echo("=" * 40)
+        if method.lower() == "zn":
+            zn_method = ZieglerNicholsMethod(sys_pars)
+            typer.echo("Ziegler-Nichols Method Results")
+            typer.echo("=" * 40)
+            typer.echo(f"System Parameters: K={K}, T={T}, L={L}")
+            typer.echo(f"Ultimate Point: {zn_method.ultimate_point}")
+            typer.echo(f"PI Controller: {zn_method.pi_controller}")
+            typer.echo("=" * 40)
+            
+        elif method.lower() == "lam":
+            lam_method = LambdaTuningMethod(sys_pars, lam=lam)
+            typer.echo("Lambda-Tuning Method Results")
+            typer.echo("=" * 40)
+            typer.echo(f"System Parameters: K={K}, T={T}, L={L}")
+            typer.echo(f"Lambda Parameter: lambda={lam}")
+            typer.echo(f"PI Controller: {lam_method.pi_controller}")
+            typer.echo("=" * 40)
         
     except ValueError as e:
         typer.echo(f"Error: {e}", err=True)
