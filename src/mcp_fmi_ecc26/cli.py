@@ -1,28 +1,20 @@
-"""CLI interface for the mcp_fmi_ecc26 package using Typer."""
-
 import typer
-from .zn import ZieglerNicholsMethod, FOPDT
+from mcp_fmi_ecc26 import ZieglerNicholsMethod, FOPDT
+
+app = typer.Typer()
 
 
+@app.command()
 def main(
-    K: float = typer.Option(2.0, "--K", help="Static process gain"),
-    T: float = typer.Option(1.0, "--T", help="Process time constant [s]"),
-    L: float = typer.Option(0.5, "--L", help="Effective time delay [s]"),
+    K: float = typer.Option(1.0, "--K", help="Static process gain, K>0"),
+    T: float = typer.Option(1.0, "--T", help="Process time constant, T>0"),
+    L: float = typer.Option(1.0, "--L", help="Effective time delay, L>0"),
 ):
-    """
-    Ziegler-Nichols Method CLI for FOPDT system analysis.
-    
-    Calculates ultimate point and PI controller parameters for a First-Order
-    Plus Dead Time (FOPDT) system using the Ziegler-Nichols closed-loop method.
-    """
+    """Ziegler-Nichols Method CLI for FOPDT system analysis."""
     try:
-        # Create FOPDT system
         sys_pars = FOPDT(K=K, T=T, L=L)
-        
-        # Create Ziegler-Nichols method instance
         zn_method = ZieglerNicholsMethod(sys_pars)
         
-        # Display results
         typer.echo("Ziegler-Nichols Method Results")
         typer.echo("=" * 40)
         typer.echo(f"System Parameters: K={K}, T={T}, L={L}")
@@ -39,4 +31,4 @@ def main(
 
 
 if __name__ == "__main__":
-    typer.run(main)
+    app()
