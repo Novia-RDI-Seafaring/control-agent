@@ -6,11 +6,21 @@ app = typer.Typer()
 
 @app.command()
 def main(
-    K: float = typer.Option(1.0, "--K", help="Static process gain, K>0"),
-    T: float = typer.Option(1.0, "--T", help="Process time constant, T>0"),
-    L: float = typer.Option(1.0, "--L", help="Effective time delay, L>0"),
+    K: float = typer.Option(..., "--K", help="Static process gain K"),
+    T: float = typer.Option(..., "--T", help="Process time constant T"),
+    L: float = typer.Option(..., "--L", help="Effective time delay L"),
+    method: str = typer.Option("zn", "--method", help="Tuning method (zn)"),
 ):
-    """Ziegler-Nichols Method CLI for FOPDT system analysis."""
+    """FOPDT system analysis CLI.
+    
+    System parameters: K (gain), T (time constant), L (time delay)
+    Methods: zn (Ziegler-Nichols)
+    """
+    
+    if method.lower() != "zn":
+        typer.echo(f"Error: Unknown method '{method}'. Available: zn", err=True)
+        raise typer.Exit(1)
+    
     try:
         sys_pars = FOPDT(K=K, T=T, L=L)
         zn_method = ZieglerNicholsMethod(sys_pars)
