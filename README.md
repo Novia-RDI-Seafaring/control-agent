@@ -10,10 +10,10 @@ $$
 to which an ideal **PI controller** with output
 
 $$
-u(t) = K_\mathrm{p}\left( e(t) + \frac{1}{T_\mathrm{i}}\int_0^te(\tau)\mathrm{d}\tau \right)
+u(t) = K_\mathrm{p}\left( e(t) + \frac{1}{T_\mathrm{i}}\int_0^te(\tau)\mathrm{d}\tau \right),
 $$
 
-is to be tuned automatically using an **AI agent** that can perform simulated experiments. It has access to access to tools that:
+with $e(t) = r(t) - y(t)$ with $r(t)$ the setpoint and $y(t)$ the measured output of the system, is is to be tuned automatically using an **AI agent**. The agent can perform simulated experiments. It has access to access to tools that:
 - Reads the model descriptions  
 - Designs input signals  
 - Sets model parameters  
