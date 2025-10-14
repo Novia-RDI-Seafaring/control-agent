@@ -5,6 +5,8 @@ description = "Experiment method and results for MCP-FMI  ECC26 paper."
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "fmpy>=0.3.26",
+    "matplotlib>=3.10.7",
     "numpy>=2.3.3",
     "pydantic>=2.12.0",
     "pytest>=8.4.2",

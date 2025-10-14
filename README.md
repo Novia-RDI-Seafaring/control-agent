@@ -68,30 +68,14 @@ print(f"PI Controller: {lam_method.pi_controller}")
 print(f"Lambda Parameter: {lam_method.lam}")
 ```
 
-# Agents and tools
+# Experiment Setup
+ The agent can perform simulated experiments. It has access to access to tools that:
+- Reads the model descriptions  
+- Designs input signals  
+- Sets model parameters  
+- Run simulations
 
 ## Simulation models
-### Functional Mock-Up Unit
-The system and controller are packaged as a single **Functional Mock-up Unit (FMU)** that ahs the following two models
-- `manual`: The operator directly determines the control signal $u(t)$. This is, e.g., used when performing open-loop experiments.
-- `automatic`: The PI control law is active and the controller computes the control signal $u(t)$. This is the normal operating mode and also used when performing closed-loop experiments.
-
-## The MCP-FMI package
-### Tools
-
-### Resources
-It is often useful to provide resources to an agent to help it understand how specific tools are expected to be used. Therefore, we have compiled documentation relevant to **PI controller tuning**.
-
-- [`docs/zn_method.md`](docs/zn_method.md): Outlines the experimental procedure for the **Ziegler–Nichols closed-loop (ultimate gain) tuning method**.  
-- [`docs/lam_method.md`](docs/lam_method.md): Describes the experimental procedure for the **Lambda tuning method**.  
-- [`docs/seaborg.md`](docs/seaborg.md): Contains selected chapters from *Seborg, D. E., Edgar, T. F., Mellichamp, D. A., & Doyle III, F. J. (2016). Process Dynamics and Control*. John Wiley & Sons.
-
-### The Agent
-
-
----
-
-# Experiment Setup
 We consider a **First-Order Plus Dead-Time (FOPDT)** system:
 
 $$
@@ -104,11 +88,43 @@ $$
 u(t) = K_\mathrm{p}\left( e(t) + \frac{1}{T_\mathrm{i}}\int_0^te(\tau)\mathrm{d}\tau \right),
 $$
 
-with $e(t) = r(t) - y(t)$ with $r(t)$ the setpoint and $y(t)$ the measured output of the system, is is to be tuned automatically using an **AI agent**. The agent can perform simulated experiments. It has access to access to tools that:
-- Reads the model descriptions  
-- Designs input signals  
-- Sets model parameters  
-- Run simulations
+with $e(t) = r(t) - y(t)$ with $r(t)$ the setpoint and $y(t)$ the measured output of the system. The controller and system are packaged as a [Functional Mock-Up Unit](https://fmi-standard.org/)
+
+The system and controller are packaged as a single **Functional Mock-up Unit (FMU)** that has the following two parameters, inputs, and outputs.
+
+### Parameters
+
+
+- **K**: Static gain of the plant
+- **T** : Time constant of the plant
+- **L**: DEat time of the plant
+- **K_c**: PI-controller proportional gain
+- **T_i**: PI-contoller integration time constant
+- **mode**:
+    - `manual`: The operator directly determines the control signal $u(t)$. This is, e.g., used when performing open-loop experiments.
+    - `automatic`: The PI control law is active and the controller computes the control signal $u(t)$. This is the normal operating mode and also used when performing closed-loop experiments.
+
+### Inputs
+- **input**: Input signal when operating in open loop, i.e., `mode = "manual"`
+- **setpoint**: Controller setppiont signal when operating in closed loop, i.e., `model = "automatic"`
+- **measurement**: Measured output of the plant
+
+### Outputs
+- **y** Measured output of the plant
+- **u** Control signal applied to the plant
+
+## Tools
+- [MCP-FMI](https://github.com/Novia-RDI-Seafaring/mcp-fmi)
+
+### Resources
+It is often useful to provide resources to an agent to help it understand how specific tools are expected to be used. Therefore, we have compiled documentation relevant to **PI controller tuning**.
+
+- [`docs/zn_method.md`](docs/zn_method.md): Outlines the experimental procedure for the **Ziegler–Nichols closed-loop (ultimate gain) tuning method**.  
+- [`docs/lam_method.md`](docs/lam_method.md): Describes the experimental procedure for the **Lambda tuning method**.  
+- [`docs/seaborg.md`](docs/seaborg.md): Contains selected chapters from *Seborg, D. E., Edgar, T. F., Mellichamp, D. A., & Doyle III, F. J. (2016). Process Dynamics and Control*. John Wiley & Sons.
+
+## The Agent
+
 
 ## Experiment queries
 
