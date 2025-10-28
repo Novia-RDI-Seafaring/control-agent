@@ -8,7 +8,7 @@ import datetime
 resource = Resource.create({"service.name": "Ft Otel Streamer Demo"})
 provider = TracerProvider(resource=resource)
 
-
+_fmu_folder = "models/fmus/aarch64-darwin"
 from fasthtml.common import *
 import sys
 sys.path.insert(0, '..')
@@ -57,11 +57,12 @@ def ChatInput():
     )
 
 @app.ws("/ws")
-async def chat_socket(msg: str, send):
+async def chat_socket(msg: str, fmu_id: str, send):
     """Handle chat WebSocket messages."""
     print(f"Chat message: {msg}")
+    print(f"FMU ID: {fmu_id}")
     tracer = provider.get_tracer("Ft Otel Streamer Demo")
-    with tracer.start_as_current_span("Chat Message: " + msg.strip()[:10] + "...", attributes={"user_message": msg.strip()}) as span:
+    with tracer.start_as_current_span(f"FMU: {fmu_id.strip()} " + msg.strip()[:10] + "...", attributes={"user_message": msg.strip()}) as span:
         # Add user message
         span.set_attribute("message", msg.strip())
         messages.append({"role": "user", "content": msg.strip()})
@@ -88,32 +89,9 @@ async def chat_socket(msg: str, send):
         messages.append({"role": "assistant", "content": reply})
         await send(Div(ChatMessage(len(messages) - 1), hx_swap_oob="beforeend", id="chatlist"))
 
-@app.get("/test")
-def test_traces():
-    """Create some test traces for demonstration."""
-    print("Creating test traces...")
-    with tracer.start_as_current_span("test_operation") as span:
-        span.set_attribute("operation", "test")
-        span.set_attribute("user", "demo")
-
-        # Simulate some work with nested spans
-        with tracer.start_as_current_span("database_query") as db_span:
-            db_span.set_attribute("query", "SELECT * FROM users")
-            db_span.set_attribute("duration_ms", 45)
-
-            # Simulate error in nested span
-            with tracer.start_as_current_span("cache_lookup") as cache_span:
-                cache_span.set_attribute("cache_key", "user:123")
-                cache_span.set_attribute("hit", False)
-
-        with tracer.start_as_current_span("response_formatting") as format_span:
-            format_span.set_attribute("format", "json")
-            format_span.set_attribute("size_bytes", 1024)
-
-    return Div("Test traces created! Check the telemetry panel.", cls="alert alert-success")
-
 @app.get("/")
 def index():
+    global _fmu_folder
     """Main page with telemetry demo."""
     with tracer.start_as_current_span("page_render") as span:
         span.set_attribute("page", "index")
@@ -143,6 +121,12 @@ def index():
                         ),
 
                         Form(
+                            Group(Select(
+                                *[Option(f, value=f) for f in os.listdir(_fmu_folder)],
+                                name="fmu_id",
+                                id="fmu-select",
+                                cls="select select-bordered w-full"
+                            )),
                             Group(ChatInput(), Button("Send", cls="btn btn-primary")),
                             hx_ext="ws",
                             ws_send=True,
@@ -203,11 +187,15 @@ def index():
         )
 
 if __name__ == "__main__":
-    import sys
-    port = 8002
-    if len(sys.argv) > 1 and sys.argv[1].startswith('--port='):
-        port = int(sys.argv[1].split('=')[1])
-    elif len(sys.argv) > 2 and sys.argv[1] == '--port':
-        port = int(sys.argv[2])
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--port', type=int, default=os.getenv("SIMULATION_UI_PORT", 8002))
+    parser.add_argument('--host', type=str, default=os.getenv("SIMULATION_UI_HOST", "localhost"))
+    parser.add_argument('--folder', type=str, default=os.getenv("SIMULATION_FMU_FOLDER", "models/fmus/"))
+    args = parser.parse_args()
+    port = args.port
+    host = args.host
+    _fmu_folder = args.folder
+    print(f"Using FMU folder: {_fmu_folder}")
 
     serve(host="0.0.0.0", port=port)
