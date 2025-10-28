@@ -12,10 +12,15 @@ from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider, Resource
 from opentelemetry.instrumentation.fmpy import FmpyInstrumentor
 from mcp_fmi_ecc26.utils.fmu import list_fmus
-resource = Resource.create({"service.name": "Ft Otel Streamer Demo"})
-provider = TracerProvider(resource=resource)
 import fasthtml_otel as ft_otel
 # Create FastHTML app
+
+import logging
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+resource = Resource.create({"service.name": "MCP-FMI ECC26 Demo"})
+provider = TracerProvider(resource=resource)
+
 app = FastHTML(exts="ws")
 streamer = ft_otel.configure(
     app,
@@ -24,9 +29,13 @@ streamer = ft_otel.configure(
     endpoint=f"/telemetry-{uuid.uuid4()}"
 )
 # Instrument Pydantic AI (renderer-agnostic)
+logger.debug("Instrumenting Pydantic AI")
 ft_otel.instrument_pydantic_ai(provider)
+
+logger.debug("Instrumenting FMPy")
 FmpyInstrumentor().instrument()
 
+logger.debug("Getting tracer")
 tracer = provider.get_tracer("Ft Otel Streamer Demo")
 
 
@@ -47,7 +56,7 @@ class ChatMessage(BaseModel):
             Div(self.content, id=f"chat-content-{self.idx}", cls=f"chat-bubble {bubble}"),
             id=f"chat-message-{self.idx}",
             cls=f"chat {align}"
-        )        
+        )
         return self.model_dump_json()
 
 
