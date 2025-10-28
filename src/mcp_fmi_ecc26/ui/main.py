@@ -5,7 +5,7 @@ from mcp_fmi_ecc26.agent import simulation_agent as agent
 import datetime
 
 
-_fmu_folder = "models/fmus/aarch64-darwin"
+_fmu_folder = "models/fmus/"
 from fasthtml.common import *
 import sys
 sys.path.insert(0, '..')
