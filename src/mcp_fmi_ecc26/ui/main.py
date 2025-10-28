@@ -44,7 +44,7 @@ class ChatMessage(BaseModel):
         align = "chat-end" if self.role == "user" else "chat-start"
         return Div(
             Div(self.role, cls="chat-header text-xs opacity-70"),
-            Div(self.role, id=f"chat-content-{self.idx}", cls=f"chat-bubble {bubble}"),
+            Div(self.content, id=f"chat-content-{self.idx}", cls=f"chat-bubble {bubble}"),
             id=f"chat-message-{self.idx}",
             cls=f"chat {align}"
         )        
