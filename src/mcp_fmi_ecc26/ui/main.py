@@ -1,27 +1,27 @@
 
-from pydantic_ai import Agent
-from mcp_fmi_ecc26.agent import simulation_agent as agent
+from pydantic_ai import Agent, ModelMessage
+from mcp_fmi_ecc26.agent import ask, get_history
 import datetime
+import uuid
+from pydantic import BaseModel
 
-
-_fmu_folder = "models/fmus/"
 from fasthtml.common import *
 import sys
 sys.path.insert(0, '..')
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider, Resource
 from opentelemetry.instrumentation.fmpy import FmpyInstrumentor
-
+from mcp_fmi_ecc26.utils.fmu import list_fmus
 resource = Resource.create({"service.name": "Ft Otel Streamer Demo"})
 provider = TracerProvider(resource=resource)
 import fasthtml_otel as ft_otel
-
 # Create FastHTML app
 app = FastHTML(exts="ws")
 streamer = ft_otel.configure(
     app,
     provider,
     auto_expand_patterns=[],
+    endpoint=f"/telemetry-{uuid.uuid4()}"
 )
 # Instrument Pydantic AI (renderer-agnostic)
 ft_otel.instrument_pydantic_ai(provider)
@@ -34,17 +34,22 @@ tracer = provider.get_tracer("Ft Otel Streamer Demo")
 # Chat messages storage
 messages = []
 
-def ChatMessage(idx):
-    """Render a chat message."""
-    msg = messages[idx]
-    bubble = "chat-bubble-primary" if msg["role"] == "user" else "chat-bubble-secondary"
-    align = "chat-end" if msg["role"] == "user" else "chat-start"
-    return Div(
-        Div(msg["role"], cls="chat-header text-xs opacity-70"),
-        Div(msg["content"], id=f"chat-content-{idx}", cls=f"chat-bubble {bubble}"),
-        id=f"chat-message-{idx}",
-        cls=f"chat {align}"
-    )
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+    idx: int
+
+    def __ft__(self):
+        bubble = "chat-bubble-primary" if self.role == "user" else "chat-bubble-secondary"
+        align = "chat-end" if self.role == "user" else "chat-start"
+        return Div(
+            Div(self.role, cls="chat-header text-xs opacity-70"),
+            Div(self.role, id=f"chat-content-{self.idx}", cls=f"chat-bubble {bubble}"),
+            id=f"chat-message-{self.idx}",
+            cls=f"chat {align}"
+        )        
+        return self.model_dump_json()
+
 
 def ChatInput():
     """Render chat input field."""
@@ -57,43 +62,44 @@ def ChatInput():
         hx_swap_oob="true",
     )
 
+
 @app.ws("/ws")
-async def chat_socket(msg: str, fmu_id: str, send):
+async def chat_socket(session_id: str, msg: str, fmu_id: str, send):
+    global history
     """Handle chat WebSocket messages."""
     print(f"Chat message: {msg}")
     print(f"FMU ID: {fmu_id}")
+    print(f"Session ID: {session_id}")
     tracer = provider.get_tracer("Ft Otel Streamer Demo")
-    with tracer.start_as_current_span(f"FMU: {fmu_id.strip()} " + msg.strip()[:10] + "...", attributes={"user_message": msg.strip()}) as span:
+    with tracer.start_as_current_span(f"User message", attributes={"user_message": msg.strip()}) as span:
         # Add user message
         span.set_attribute("fmu_id", fmu_id.strip())
         span.set_attribute("message", msg.strip())
-        messages.append({"role": "user", "content": msg.strip() + " (FMU id: '" + fmu_id.strip() + "')"})
-        await send(Div(ChatMessage(len(messages) - 1), hx_swap_oob="beforeend", id="chatlist"))
+        messages = get_history(session_id)
+        msgc = ChatMessage(role="user", content=msg.strip(), idx=len(messages))
+        await send(Div(msgc, hx_swap_oob="beforeend", id="chatlist"))
         await send(ChatInput())
 
         # Process with AI agent
         try:
             with tracer.start_as_current_span("ai_processing") as ai_span:
-                ai_span.set_attribute("model", "gpt-4o-mini")
-                ai_span.set_attribute("input_length", len(msg))
+                reply = await ask(msg + f" (fmu file: {fmu_id})", session_id)
+                span.set_attribute("reply", reply)
 
-                result = await agent.run(msg)
-                reply = result.response.text
-
-                ai_span.set_attribute("output_length", len(reply))
-                ai_span.set_attribute("success", True)
 
         except Exception as e:
             reply = f"Error: {e} (Check OPENAI_API_KEY environment variable)"
             span.set_attribute("error", True)
             span.set_attribute("error_message", str(e))
 
-        messages.append({"role": "assistant", "content": reply})
-        await send(Div(ChatMessage(len(messages) - 1), hx_swap_oob="beforeend", id="chatlist"))
+        await send(Div(ChatMessage(role="assistant", content=reply, idx=len(messages)-1), hx_swap_oob="beforeend", id="chatlist"))
+
 
 @app.get("/")
-def index():
-    global _fmu_folder
+def index(session):
+    
+    session_id = session.get("session_id", str(uuid.uuid4()))
+    
     """Main page with telemetry demo."""
     with tracer.start_as_current_span("page_render") as span:
         span.set_attribute("page", "index")
@@ -123,8 +129,9 @@ def index():
                         ),
 
                         Form(
+                            Input(type="hidden", name="session_id", value=session_id),
                             Group(Select(
-                                *[Option(f, value=f) for f in os.listdir(_fmu_folder)],
+                                *[Option(f, value=f) for f in list_fmus()],
                                 name="fmu_id",
                                 id="fmu-select",
                                 cls="select select-bordered w-full"

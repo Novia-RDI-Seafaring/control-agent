@@ -5,8 +5,10 @@ from fmpy import simulate_fmu
 from pydantic import BaseModel
 from typing import Tuple, List, Dict, Any
 from uuid import uuid4
+from pathlib import Path
 
 _folder = "models/fmus"
+_data_folder = "data"
 
 def get_folder():
     return _folder
@@ -15,7 +17,11 @@ def set_folder(folder: str):
     global _folder
     _folder = folder
 
-def list_fmus():
+def get_data_folder():
+    return _data_folder
+
+
+def list_fmus() -> List[str]:
     return list(filter(lambda x: x.endswith(".fmu"), os.listdir(get_folder())))
 
 def get_fmu_path(fmu_id: str):
@@ -24,43 +30,18 @@ def get_fmu_path(fmu_id: str):
 def get_fmu_description(fmu_id: str):
     return read_model_description(get_fmu_path(fmu_id))
 
-
-def get_fmu_simulation_result(fmu_id: str):
-    return simulate_fmu(get_fmu_path(fmu_id))
-
-def create_result_path(result_id: str):
-    return os.path.join("data", "simulations", result_id, ".json")
+def get_result_path(result_id: str):
+    path = Path(get_data_folder(), "data", "simulations", f"{result_id}.json")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    return path.as_posix()
 
 
 def load_result(result_id: str):
     with open(get_result_path(result_id), "r") as f:
         return json.load(f)
     
-class Parameters(BaseModel):
-    time: float
-    signals: dict
-
-class FMUTool:
-
-    results: List[Tuple[Parameters, str]]
-    current_parameters: Parameters
-
-    def __init__(self, fmu_id: str):        
-        self.fmu_id = fmu_id
-        self.fmu_path = get_fmu_path(fmu_id)
-        self.fmu_description = get_fmu_description(fmu_id)
-        self.fmu_simulation_result = get_fmu_simulation_result(fmu_id)
-        self.results = []
-    
-    def update_parameters(self, changes: Dict[str, Any]):
-        self.current_parameters = Parameters(**{**self.current_parameters.model_dump(), **changes})
-
-    def describe(self):
-        return self.fmu_description.to_json()
-
-    def simulate(self):
-        result = self.fmu_simulation_result.result()
-        id = str(uuid4())
-        path = create_result_path(id)
-        with open(path, "w") as f:
-            json.dump(result, f)
+def annotate_result(result_id:str, note:str):
+    data:Dict[str,Any] = load_result(result_id)
+    data.setdefault("notes",[]).append(note)
+    with open(get_result_path(result_id), "w") as f:
+        json.dump(data, f)    
