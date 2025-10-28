@@ -1,7 +1,6 @@
 
 from pydantic_ai import Agent
 from mcp_fmi_ecc26.agent import simulation_agent as agent
-
 import datetime
 
 
@@ -11,7 +10,7 @@ import sys
 sys.path.insert(0, '..')
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider, Resource
-
+from opentelemetry.instrumentation.fmpy import FmpyInstrumentor
 
 resource = Resource.create({"service.name": "Ft Otel Streamer Demo"})
 provider = TracerProvider(resource=resource)
@@ -26,6 +25,7 @@ streamer = ft_otel.configure(
 )
 # Instrument Pydantic AI (renderer-agnostic)
 ft_otel.instrument_pydantic_ai(provider)
+FmpyInstrumentor().instrument()
 
 tracer = provider.get_tracer("Ft Otel Streamer Demo")
 
@@ -65,8 +65,9 @@ async def chat_socket(msg: str, fmu_id: str, send):
     tracer = provider.get_tracer("Ft Otel Streamer Demo")
     with tracer.start_as_current_span(f"FMU: {fmu_id.strip()} " + msg.strip()[:10] + "...", attributes={"user_message": msg.strip()}) as span:
         # Add user message
+        span.set_attribute("fmu_id", fmu_id.strip())
         span.set_attribute("message", msg.strip())
-        messages.append({"role": "user", "content": msg.strip()})
+        messages.append({"role": "user", "content": msg.strip() + " (FMU id: '" + fmu_id.strip() + "')"})
         await send(Div(ChatMessage(len(messages) - 1), hx_swap_oob="beforeend", id="chatlist"))
         await send(ChatInput())
 
