@@ -1,18 +1,20 @@
-from opentelemetry import trace
-from opentelemetry.sdk.trace import TracerProvider, Resource
+
 from pydantic_ai import Agent
 from mcp_fmi_ecc26.agent import simulation_agent as agent
 
 import datetime
 
-resource = Resource.create({"service.name": "Ft Otel Streamer Demo"})
-provider = TracerProvider(resource=resource)
 
 _fmu_folder = "models/fmus/aarch64-darwin"
 from fasthtml.common import *
 import sys
 sys.path.insert(0, '..')
+from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider, Resource
 
+
+resource = Resource.create({"service.name": "Ft Otel Streamer Demo"})
+provider = TracerProvider(resource=resource)
 import fasthtml_otel as ft_otel
 
 # Create FastHTML app
@@ -22,7 +24,6 @@ streamer = ft_otel.configure(
     provider,
     auto_expand_patterns=[],
 )
-
 # Instrument Pydantic AI (renderer-agnostic)
 ft_otel.instrument_pydantic_ai(provider)
 
