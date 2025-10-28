@@ -6,16 +6,27 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "fmpy>=0.3.26",
+    "langchain>=1.0.2",
+    "langchain-core>=1.0.0",
+    "langchain-openai>=1.0.1",
+    "langgraph>=1.0.1",
     "matplotlib>=3.10.7",
+    "mcp-fmi",
     "numpy>=2.3.3",
+    "openai>=2.6.0",
+    "plotly>=6.3.1",
     "pydantic>=2.12.0",
     "pytest>=8.4.2",
+    "python-dotenv>=1.1.1",
+    "python-fasthtml>=0.12.30",
     "scipy>=1.16.2",
     "typer>=0.12.0",
 ]
 
 [project.scripts]
 ecc26 = "mcp_fmi_ecc26.cli:app"
+agent-cli = "agent.cli:main"
+agent-dashboard = "agent.dashboard:main"
 
 [build-system]
 requires = ["setuptools>=61.0"]
@@ -26,4 +37,7 @@ package-dir = { "" = "src" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.uv.sources]
+mcp-fmi = { git = "https://github.com/Novia-RDI-Seafaring/mcp-fmi.git" }
 
