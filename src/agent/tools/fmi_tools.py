@@ -272,6 +272,17 @@ def analyse_step_response(
     data: DataModel,
     props: AnalysisProps,
 ) -> StepResponseAnalysis:
+    """
+    Analyses a step response.
+
+    Args:
+        signal_name: Name of the signal
+        data: DataModel containing the data
+        props: AnalysisProps containing the analysis properties
+
+    Returns:
+        StepResponseAnalysis: Step response analysis
+    """
     t = np.asarray(data.timestamps, dtype=float)
     y = np.asarray(data.signals[signal_name], dtype=float)
 

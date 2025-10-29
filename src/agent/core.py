@@ -17,6 +17,7 @@ from agent.tools.fmi_tools import (
     create_signal_tool,
     merge_signals_tool,
     generate_step_tool,
+    analyse_step_response
 )
 from agent.tools.functions.schema import DataModel, SimulationModel
 
@@ -80,6 +81,10 @@ def create_agent(
         Tool(generate_step_tool,
             name="generate_step",
             description=generate_step_tool.__doc__,
+            takes_ctx=False),
+        Tool(analyse_step_response,
+            name="analyse_step_response",
+            description=analyse_step_response.__doc__,
             takes_ctx=False),
         #Tool(create_signal_tool,
         #    name="create_signal",
