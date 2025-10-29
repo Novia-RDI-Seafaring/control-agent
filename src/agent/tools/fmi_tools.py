@@ -4,9 +4,11 @@ from typing import List
 from pathlib import Path
 
 from agent.tools.functions.inputs import create_signal, merge_signals, data_model_to_ndarray, ndarray_to_data_model
-from agent.tools.functions.schema import FMUCollection, DataModel, FMUInfo, SimulationModel
+from agent.tools.functions.schema import FMUCollection, DataModel, FMUInfo, SimulationModel, StepProps
 from agent.tools.functions.information import _get_model_description, _get_all_model_descriptions, _get_fmu_names
 from fmpy import simulate_fmu
+
+import numpy as np
 
 # Default FMU directory path
 DEFAULT_FMU_DIR = (Path(__file__).parents[3] / "models" / "fmus").resolve()
@@ -149,6 +151,20 @@ def simulate_tool(sim: SimulationModel) -> DataModel:
     
     return data_model
 
+def generate_step_tool(step: StepProps) -> DataModel:
+    """
+    Generates a step signal.
+    
+    Args:
+        step: StepProps containing the step signal properties
+        
+    Returns:
+        DataModel: Step signal
+    """
+    timestamps = np.arange(step.time_range.start, step.time_range.stop, step.time_range.sampling_time)
+    values = np.full(len(timestamps), step.initial_value)
+    values[np.where(np.array(timestamps) >= step.step_time)] = step.final_value
+    return DataModel(timestamps=timestamps, signals={step.signal_name: values})
 
 def _emit_simulation_plot(fmu_name: str, data: DataModel, start_time: float, stop_time: float):
     """Emit a UI component for simulation results visualization."""
