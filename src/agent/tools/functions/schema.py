@@ -122,7 +122,7 @@ class AnalysisProps(BaseModel):
             "Specifies the threshold ST used in defining settling/transient times."
         ),
     )
-    rise_time_limits: Tuple[float, float] = Field(
+    rise_time_limits: List[float] = Field(
         default=(0.1, 0.9),
         description=(
             "Specifies lower/upper RT(0) and RT(1) thresholds used for rise time. "
@@ -134,43 +134,43 @@ class AnalysisProps(BaseModel):
 
 class CharacteristicPoints(BaseModel):
     # (time, value) pairs at key fractions of the total change
-    p0: Tuple[float, float] = Field(
+    p0: List[float] = Field(
         ...,
         description="(t0, y0): first time when output starts to change from initial value."
     )
-    p10: Tuple[float, float] = Field(
+    p10: List[float] = Field(
         ...,
         description="(t10, y10): (time, value) pair when output first reachest 10% of total change."
     )
-    p63: Tuple[float, float] = Field(
+    p63: List[float] = Field(
         ...,
         description="(t63, y63): (time, value) pair when output first reaches 63% (≈1−e⁻¹) of total change."
     )
-    p90: Tuple[float, float] = Field(
+    p90: List[float] = Field(
         ...,
         description="(t90, y90): (time, value) pair when output first reaches 90% of total change."
     )
-    p98: Tuple[float, float] = Field(
+    p98: List[float] = Field(
         ...,
         description="(t98, y98): (time, value) pair when output first reaches 98% of total change."
     )
-    pRT0: Tuple[float, float] = Field(
+    pRT0: List[float] = Field(
         ...,
         description="(tRT0, yRT0): (time, value) pair when output first reaches RT(0) of total change."
     )
-    pRT1: Tuple[float, float] = Field(
+    pRT1: List[float] = Field(
         ...,
         description="(tRT1, yRT1): (time, value) pair when output first reaches RT(1) of total change."
     )
-    pST: Tuple[float, float] = Field(
+    pST: List[float] = Field(
         ...,
         description="(tST, yST): (time, value) pair when output first reaches ST of total change."
     )
-    pPeak: Tuple[float, float] = Field(
+    pPeak: List[float] = Field(
         ...,
         description="(tPeak, yPeak): Peak value and corresponding time point."
     )
-    pUndershoot: Tuple[float, float] = Field(
+    pUndershoot: List[float] = Field(
         ...,
         description="(tUndershoot, yUndershoot): Undershoot value (smallest value after RT1) and corresponding time point."
     )
