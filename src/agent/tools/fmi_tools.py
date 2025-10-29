@@ -4,7 +4,7 @@ from typing import List
 from pathlib import Path
 
 from agent.tools.functions.inputs import create_signal, merge_signals, data_model_to_ndarray, ndarray_to_data_model
-from agent.tools.functions.schema import FMUCollection, DataModel, FMUInfo, SimulationModel, StepProps
+from agent.tools.functions.schema import FMUCollection, DataModel, FMUInfo, SimulationModel, StepProps, StepResponseAnalysis, CharacteristicPoints, AnalysisProps
 from agent.tools.functions.information import _get_model_description, _get_all_model_descriptions, _get_fmu_names
 from fmpy import simulate_fmu
 
@@ -160,11 +160,23 @@ def generate_step_tool(step: StepProps) -> DataModel:
         
     Returns:
         DataModel: Step signal
+
+    Usage: When step singals are passed to other tools as inputs, for example when simulating, make sure thaht the step signal is generated with the correct signal name.
     """
-    timestamps = np.arange(step.time_range.start, step.time_range.stop, step.time_range.sampling_time)
-    values = np.full(len(timestamps), step.initial_value)
-    values[np.where(np.array(timestamps) >= step.step_time)] = step.final_value
-    return DataModel(timestamps=timestamps, signals={step.signal_name: values})
+    start = step.time_range.start
+    stop = step.time_range.stop
+    dt = step.time_range.sampling_time
+
+    # number of samples in interval
+    N = int(round((stop - start) / dt))
+
+    timestamps = np.linspace(start, start + N * dt, N + 1, dtype=float)
+    values = np.full_like(timestamps, step.initial_value, float)
+    values[timestamps >= step.step_time] = step.final_value
+    return DataModel(
+        timestamps=timestamps,
+        signals={step.signal_name: values.tolist()}
+        )
 
 def _emit_simulation_plot(fmu_name: str, data: DataModel, start_time: float, stop_time: float):
     """Emit a UI component for simulation results visualization."""
@@ -255,3 +267,157 @@ def merge_signals_tool(signals: List[DataModel]) -> DataModel:
 
     return merge_signals(signals)
 
+def analyse_step_response(
+    signal_name: str,
+    data: DataModel,
+    props: AnalysisProps,
+) -> StepResponseAnalysis:
+    t = np.asarray(data.timestamps, dtype=float)
+    y = np.asarray(data.signals[signal_name], dtype=float)
+
+    # Basic quantities
+    y_start, y_final = float(y[0]), float(y[-1])
+    dy = y_final - y_start
+    abs_dy = abs(dy) if abs(dy) > 0 else 1.0
+    is_upward = dy >= 0
+
+    # Initial response: first deviation > 1% of total change
+    eps = 0.01 * abs_dy
+    dev_idx = np.where(np.abs(y - y_start) > eps)[0]
+    t_initial = float(t[dev_idx[0]]) if dev_idx.size else float(t[0])
+    i_initial = int(np.searchsorted(t, t_initial, side="left"))
+
+    # Helper: get value at time (with interpolation)
+    def get_value(t_val: float) -> float:
+        if not np.isfinite(t_val):
+            return float("nan")
+        idx = np.searchsorted(t, t_val, side="left")
+        if idx == 0:
+            return float(y[0])
+        if idx >= len(y):
+            return float(y[-1])
+        if t[idx] == t_val:
+            return float(y[idx])
+        # Linear interpolation
+        t0, t1, y0, y1 = t[idx - 1], t[idx], y[idx - 1], y[idx]
+        return float(y0 + (y1 - y0) * (t_val - t0) / (t1 - t0))
+
+    # Helper: first crossing of threshold
+    def first_cross(threshold: float) -> float:
+        if is_upward:
+            idx = np.where(y[i_initial:] >= threshold)[0]
+        else:
+            idx = np.where(y[i_initial:] <= threshold)[0]
+        return float(t[i_initial + idx[0]]) if idx.size else float("nan")
+
+    # Characteristic crossing times
+    levels = {name: y_start + frac * dy for name, frac in [
+        ('10', 0.10), ('63', 0.63), ('90', 0.90), ('98', 0.98),
+        ('RT0', props.rise_time_limits[0]), ('RT1', props.rise_time_limits[1])
+    ]}
+    crossings = {name: first_cross(level) for name, level in levels.items()}
+    t_10, t_63, t_90, t_98 = crossings['10'], crossings['63'], crossings['90'], crossings['98']
+    t_RT0, t_RT1 = crossings['RT0'], crossings['RT1']
+
+    # Rise time
+    rise_time = (t_90 - t_10) if np.isfinite(t_10) and np.isfinite(t_90) else float("nan")
+
+    # Settling time: last exit point where signal then stays within band
+    band = props.settling_time_treshhold * abs_dy
+    inside = np.abs(y - y_final) <= band
+    
+    if np.all(inside):
+        settling_time_abs = float(t[0])
+    elif np.any(~inside):
+        last_out = int(np.where(~inside)[0][-1])
+        if last_out + 1 < len(y) and np.all(inside[last_out + 1:]):
+            settling_time_abs = float(t[last_out + 1])
+        else:
+            settling_time_abs = float("nan")
+    else:
+        settling_time_abs = float("nan")
+    
+    # Settling time relative to initial response
+    settling_time = (settling_time_abs - t_initial) if np.isfinite(settling_time_abs) else float("nan")
+
+    # Settling min/max: after RT1
+    i_RT1 = int(np.searchsorted(t, t_RT1, side="left")) if np.isfinite(t_RT1) else 0
+    y_settling = y[i_RT1:] if i_RT1 < len(y) else y
+    settling_min, settling_max = float(np.min(y_settling)), float(np.max(y_settling))
+
+    # Peak: maximum after rise time (after t_90)
+    if np.isfinite(t_90):
+        i_start = int(np.searchsorted(t, t_90, side="left"))
+        if i_start < len(y):
+            idx = i_start + (np.argmax if is_upward else np.argmin)(y[i_start:])
+            peak, peak_time = float(y[idx]), float(t[idx])
+        else:
+            peak, peak_time = float(y[-1]), float(t[-1])
+    else:
+        # Fallback: peak after initial response
+        idx = i_initial + (np.argmax if is_upward else np.argmin)(y[i_initial:])
+        peak, peak_time = float(y[idx]), float(t[idx])
+
+    # Overshoot: peak exceeds final value
+    if (is_upward and peak > y_final) or (not is_upward and peak < y_final):
+        overshoot = abs(peak - y_final) / abs_dy * 100.0
+    else:
+        overshoot = None
+
+    # Undershoot: smallest value after RT1 relative to final value, as percentage
+    # Find the time point where undershoot occurs
+    undershoot_time = float("nan")
+    undershoot_value = float("nan")
+    
+    if np.isfinite(t_RT1) and len(y_settling) > 0:
+        # Find index of minimum value after RT1
+        if is_upward:
+            # Find index of settling_min in y_settling
+            min_idx_in_settling = int(np.argmin(y_settling))
+            undershoot_idx = i_RT1 + min_idx_in_settling
+            if undershoot_idx < len(t):
+                undershoot_time = float(t[undershoot_idx])
+                undershoot_value = settling_min
+        else:
+            # Find index of settling_max in y_settling
+            max_idx_in_settling = int(np.argmax(y_settling))
+            undershoot_idx = i_RT1 + max_idx_in_settling
+            if undershoot_idx < len(t):
+                undershoot_time = float(t[undershoot_idx])
+                undershoot_value = settling_max
+        
+        # Calculate undershoot percentage
+        if is_upward:
+            if settling_min < y_final:
+                undershoot = abs(settling_min - y_final) / abs_dy * 100.0
+            else:
+                undershoot = None
+        else:
+            if settling_max > y_final:
+                undershoot = abs(settling_max - y_final) / abs_dy * 100.0
+            else:
+                undershoot = None
+    else:
+        undershoot = None
+
+    # Helper: create characteristic point tuple
+    def cp(t_val: float, y_val: float = None) -> tuple:
+        t_safe = t_val if np.isfinite(t_val) else float("nan")
+        y_safe = y_val if y_val is not None else get_value(t_val)
+        return (t_safe, y_safe)
+
+    return StepResponseAnalysis(
+        characteristic_points=CharacteristicPoints(
+            p0=cp(t_initial, y_start),
+            p10=cp(t_10), p63=cp(t_63), p90=cp(t_90), p98=cp(t_98),
+            pRT0=cp(t_RT0), pRT1=cp(t_RT1),
+            pST=cp(settling_time_abs), pPeak=cp(peak_time, peak),
+            pUndershoot=cp(undershoot_time, undershoot_value),
+        ),
+        rise_time=rise_time,
+        settling_time=settling_time,
+        settling_min=settling_min,
+        settling_max=settling_max,
+        overshoot=overshoot,
+        undershoot=undershoot,
+    )
