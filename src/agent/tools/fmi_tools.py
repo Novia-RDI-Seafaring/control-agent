@@ -155,13 +155,12 @@ def _emit_simulation_plot(fmu_name: str, data: DataModel, start_time: float, sto
     import json
     
     # Extract time and output data
-    time_data = data.timestamps.tolist() if hasattr(data, 'timestamps') else []
+    time_data = data.timestamps  # Already a list per DataModel schema
     output_data = {}
     
     # Extract each output variable
-    for i, var_name in enumerate(data.variable_names):
-        if i < len(data.data):
-            output_data[var_name] = data.data[i].tolist()
+    for var_name in data.signals:
+        output_data[var_name] = data.signals[var_name]  # Already a list
     
     # Create component spec for AG-UI
     component_spec = {

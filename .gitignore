@@ -71,6 +71,7 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+models/fmus/aarch64-darwin/
 
 # PyBuilder
 .pybuilder/
