@@ -1,18 +1,20 @@
-"""Tools for FMU simulation and analysis."""
+"""Agent tools module."""
 
-from .fmu_info import get_fmu_info_tool
-from .simulate import simulate_fmu_tool
-from .signals import create_step_signal_tool
-from .identify import identify_fopdt_tool
-from .analyze import calculate_metrics_tool
-from .parameters import set_fmu_parameters_tool
+from .fmi_tools import (
+    get_all_model_descriptions,
+    get_model_description,
+    get_fmu_names,
+    simulate_tool,
+    create_signal_tool,
+    merge_signals_tool,
+)
 
 __all__ = [
-    "get_fmu_info_tool",
-    "simulate_fmu_tool",
-    "create_step_signal_tool",
-    "identify_fopdt_tool",
-    "calculate_metrics_tool",
-    "set_fmu_parameters_tool",
+    "get_all_model_descriptions",
+    "get_model_description",
+    "get_fmu_names",
+    "simulate_tool",
+    "create_signal_tool",
+    "merge_signals_tool",
 ]
 

@@ -5,34 +5,23 @@ description = "Experiment method and results for MCP-FMI  ECC26 paper."
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "fasthtml-otel>=0.1.1",
+    "fastapi>=0.120.1",
     "fmpy>=0.3.26",
-    "langchain>=1.0.2",
-    "langchain-core>=1.0.0",
-    "langchain-openai>=1.0.1",
-    "langgraph>=1.0.1",
     "matplotlib>=3.10.7",
     "mcp-fmi",
     "numpy>=2.3.3",
-    "opentelemetry-api>=1.38.0",
-    "opentelemetry-instrumentation-fmpy>=0.1.2",
-    "opentelemetry-sdk>=1.38.0",
-    "openai>=2.6.0",
-    "plotly>=6.3.1",
     "pydantic>=2.12.0",
     "pydantic-ai>=1.7.0",
+    "pydantic-ai-slim[ag-ui,fastmcp,mcp,openai]>=1.7.0",
     "pytest>=8.4.2",
-    "pytest-asyncio>=1.2.0",
     "python-fasthtml>=0.12.31",
-    "python-dotenv>=1.1.1",
-    "python-fasthtml>=0.12.30",
     "scipy>=1.16.2",
     "typer>=0.12.0",
     "uuid>=1.30",
     "logfire>=4.14.2",
     "pydantic-ai-examples>=1.7.0",
+    "uvicorn>=0.38.0",
 ]
-
 
 [project.scripts]
 ecc26 = "mcp_fmi_ecc26.cli:app"

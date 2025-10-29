@@ -1,21 +1,21 @@
-"""Core agent configuration and initialization."""
-
 import os
 from typing import List, Optional, Dict, Any
 from dotenv import load_dotenv
-from langchain_openai import AzureChatOpenAI
-from langchain_core.tools import BaseTool, tool
-from langchain.agents import create_agent as langchain_create_agent
+
+from openai import AsyncClient
+from pydantic_ai import Agent, RunContext, AgentRunResultEvent, AgentStreamEvent, agent, Tool
+from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.providers.azure import AzureProvider
+from httpx import AsyncClient
 
 from agent.prompts import SYS_PROMPT
-from agent.prompts.sim_prompt import SIM_PROMPT
-from agent.tools import (
-    get_fmu_info_tool,
-    simulate_fmu_tool,
-    create_step_signal_tool,
-    identify_fopdt_tool,
-    calculate_metrics_tool,
-    set_fmu_parameters_tool,
+from agent.tools.fmi_tools import (
+    get_all_model_descriptions,
+    get_model_description,
+    get_fmu_names,
+    simulate_tool,
+    create_signal_tool,
+    merge_signals_tool,
 )
 
 # Load environment variables
@@ -24,29 +24,22 @@ load_dotenv()
 # System prompt with tuning method documentation
 SYSTEM_PROMPT = SYS_PROMPT
 
-# add this tool (anywhere top-level)
-@tool("finish", return_direct=True)
-def finish(text: str) -> str:
-    """Use this to end the task. Input must be the final answer in Markdown."""
-    return text
-
-
 def create_agent(
     model_name: Optional[str] = None,
     temperature: float = 0.0,
-    verbose: bool = True,
+    verbose: bool = False,
     max_iterations: int = 20,
 ):
-    """Create and configure the FMI agent using LangGraph.
+    """Create FMI agent with tools.
     
     Args:
-        model_name: Azure OpenAI deployment name (default from env)
-        temperature: LLM temperature (default: 0.0 for deterministic)
-        verbose: Enable verbose logging (default: True)
-        max_iterations: Maximum agent iterations (default: 20)
+        model_name: Azure OpenAI deployment name
+        temperature: LLM temperature
+        verbose: Enable verbose logging
+        max_iterations: Maximum iterations (not used by pydantic_ai directly)
         
     Returns:
-        Configured LangGraph agent ready to run.
+        Configured pydantic_ai Agent
     """
     # Get Azure OpenAI configuration
     endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
@@ -54,37 +47,50 @@ def create_agent(
     deployment = model_name or os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-4")
     api_version = os.getenv("AZURE_OPENAI_API_VERSION", "2024-02-01")
     
-    if not endpoint or not api_key:
-        raise ValueError(
-            "Azure OpenAI credentials not found. "
-            "Set AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_API_KEY in environment or .env file."
+    CLIENT = AsyncClient()
+    MODEL = OpenAIChatModel(
+        deployment,
+        provider=AzureProvider(
+            azure_endpoint=endpoint,
+            api_key=api_key,
+            api_version=api_version,
+            http_client=CLIENT,
         )
-    
-    # Initialize LLM
-    # Note: temperature parameter may not be supported by all Azure OpenAI deployments
-    llm = AzureChatOpenAI(
-        azure_endpoint=endpoint,
-        api_key=api_key,
-        azure_deployment=deployment,
-        api_version=api_version,
     )
     
-    # Define tools
-    tools: List[BaseTool] = [
-        get_fmu_info_tool,
-        simulate_fmu_tool,
-        create_step_signal_tool,
-        identify_fopdt_tool,
-        calculate_metrics_tool,
-        set_fmu_parameters_tool,
-        finish,
+    TOOLS = [
+        Tool(get_all_model_descriptions,
+            name="get_all_model_descriptions",
+            description=get_all_model_descriptions.__doc__,
+            takes_ctx=False),
+        Tool(get_model_description,
+            name="get_model_description",
+            description=get_model_description.__doc__,
+            takes_ctx=False),
+        Tool(get_fmu_names,
+            name="get_fmu_names",
+            description=get_fmu_names.__doc__,
+            takes_ctx=False),
+        Tool(simulate_tool,
+            name="simulate_fmu",  # expose the desired tool name
+            description=simulate_tool.__doc__,
+            takes_ctx=False),
+        Tool(create_signal_tool,
+            name="create_signal",
+            description=create_signal_tool.__doc__,
+            takes_ctx=False),
+        Tool(merge_signals_tool,
+            name="merge_signals",
+            description=merge_signals_tool.__doc__,
+            takes_ctx=False),
     ]
     
-    # Create agent using official LangChain 1.0 API
-    agent_executor = langchain_create_agent(
-        llm,
-        tools,
-        system_prompt=SYSTEM_PROMPT
+    # Create agent with tools
+    fmi_agent = Agent(
+        model=MODEL,
+        instructions=SYS_PROMPT,
+        name="FMIAgent",
+        tools=TOOLS,
     )
     
-    return agent_executor
+    return fmi_agent

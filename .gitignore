@@ -25,7 +25,6 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
-data/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -51,7 +50,7 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 cover/
-.sesskey
+*copy.py
 
 # Translations
 *.mo
@@ -72,6 +71,7 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+models/fmus/aarch64-darwin/
 
 # PyBuilder
 .pybuilder/

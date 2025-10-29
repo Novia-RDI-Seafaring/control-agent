@@ -1,64 +1,8 @@
+# Ploting helper
 from collections.abc import Mapping # for more robust extractor (handles nested keys, JSON strings, and different shapes)
 import json
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-
-# def create_plot(result: dict) -> str:
-#     """Create Plotly visualization of simulation results."""
-#     if not result.get("success") or not result.get("intermediate_steps"):
-#         return "<p>No simulation data available</p>"
-#     
-#     # Extract simulation data from intermediate steps
-#     sim_data = None
-#     for step in result["intermediate_steps"]:
-#         if len(step) >= 2:
-#             observation = step[1]
-#             if isinstance(observation, dict) and "time" in observation and "y" in observation:
-#                 sim_data = observation
-#                 break
-#     
-#    if not sim_data:
-#        return "<p>No simulation data found</p>"
-#    
-#    # Create subplot figure
-#    fig = make_subplots(
-#        rows=2, cols=1,
-#        subplot_titles=("Process Output (y)", "Control Signal (u)"),
-#        vertical_spacing=0.12,
-#        shared_xaxes=True,
-#    )
-#    
-#    time = sim_data.get("time", [])
-#    
-#    # Plot y
-#    if "y" in sim_data:
-#        fig.add_trace(
-#           go.Scatter(x=time, y=sim_data["y"], name="y (output)", line=dict(color="blue")),
-#            row=1, col=1
-#        )
-#    
-#    # Plot setpoint if available
-#    if "setpoint" in sim_data:
-#        fig.add_trace(
-#            go.Scatter(x=time, y=sim_data["setpoint"], name="setpoint", line=dict(color="red", dash="dash")),
-#            row=1, col=1
-#        )
-#    
-#    # Plot u
-#   if "u" in sim_data:
-#        fig.add_trace(
-#            go.Scatter(x=time, y=sim_data["u"], name="u (control)", line=dict(color="orange")),
-#            row=2, col=1
-#        )
-#    
-#    # Update layout
-#    fig.update_xaxes(title_text="Time [s]", row=2, col=1)
-#    fig.update_yaxes(title_text="y", row=1, col=1)
-#    fig.update_yaxes(title_text="u", row=2, col=1)
-#    fig.update_layout(height=600, showlegend=True, hovermode='x unified')
-#    
-#    return fig.to_html(div_id="plot", include_plotlyjs=False)
-
 
 def create_plot(result: dict) -> str:
     """Create Plotly visualization of simulation results (robust key/shape handling)."""
