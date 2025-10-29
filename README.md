@@ -125,6 +125,42 @@ It is often useful to provide resources to an agent to help it understand how sp
 
 ## The Agent
 
+The FMI Agent is an intelligent assistant that can interact with FMU models, perform simulations, and provide generative UI components for visualization. It uses the AG-UI protocol to enable dynamic UI rendering based on simulation results.
+
+### Features
+- **Generative UI**: Automatically renders appropriate UI components based on context
+- **FMU Simulation**: Run simulations and visualize results with interactive plots
+- **Model Information**: Display detailed FMU metadata and variable information
+- **Signal Creation**: Create and visualize custom input signals
+- **Real-time Chat**: Interactive chat interface with the agent
+
+### Quick Start
+
+1. **Setup the environment:**
+```bash
+# Install Python dependencies
+uv sync
+
+# Setup frontend (requires Node.js)
+python setup_frontend.py
+```
+
+2. **Start the development servers:**
+```bash
+# Start both backend and frontend
+python start_dev.py
+```
+
+3. **Access the interface:**
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000
+
+### Usage Examples
+
+- "Show me information about the fopdt_pi model" → Displays model metadata and variables
+- "Simulate the fopdt_pi model for 10 seconds" → Shows interactive simulation plot
+- "Create a sine wave signal" → Displays signal visualization
+- "Tune the PI controller using Lambda tuning" → Shows controller parameters and performance
 
 ## Experiment queries
 
