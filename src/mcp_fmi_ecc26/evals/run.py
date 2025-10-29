@@ -27,14 +27,16 @@ def run_simulation() -> str:
     """Run the simulation tool on the FMU named PI_FOPDT.fmu"""
     return simulate_fmu_tool("PI_FOPDT.fmu")
 
-from mcp_fmi_ecc26.sys import FOPDT, ControllerPI
+#from mcp_fmi_ecc26.sys import FOPDT, ControllerPI
 
 Method = Literal["zn", "lam"]
-
-pid_tuning_agent = Agent[ControllerPI, FOPDT](
+## output_type=ControllerPI,
+## input_type=FOPDT,
+##
+#id_tuning_agent = Agent[ControllerPI, FOPDT](
+simulation_agent = Agent(
         model="gpt-4o-mini",
-        output_type=ControllerPI,
-        input_type=FOPDT,
+       
         system_prompt="You are a helpful assistant that provides concise responses. always use tools if you can",
         tools=[run_simulation],
         retries=20
@@ -42,7 +44,7 @@ pid_tuning_agent = Agent[ControllerPI, FOPDT](
 
 
 async def agent_runner(question: str) -> str:
-    result = await agent.run(question)
+    result = await simulation_agent.run(question)
     return result.output
 
 from typer import Typer

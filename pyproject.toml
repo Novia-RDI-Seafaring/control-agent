@@ -38,7 +38,7 @@ dependencies = [
 ecc26 = "mcp_fmi_ecc26.cli:app"
 agent-cli = "agent.cli:main"
 agent-dashboard = "agent.dashboard:main"
-eval = "mcp_fmi_ecc26.evals.run:main"
+eval = "mcp_fmi_ecc26.evals.run:app"
 demo-eval = "mcp_fmi_ecc26.evals.demo:run_demo"
 
 [build-system]
