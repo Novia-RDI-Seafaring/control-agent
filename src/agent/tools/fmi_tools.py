@@ -4,7 +4,7 @@ from typing import List
 from pathlib import Path
 
 from agent.tools.functions.inputs import create_signal, merge_signals, data_model_to_ndarray, ndarray_to_data_model
-from agent.tools.functions.schema import FMUCollection, DataModel, FMUInfo, SimulationModel, StepProps, StepResponseAnalysis, CharacteristicPoints, AnalysisProps
+from agent.tools.functions.schema import FMUCollection, DataModel, FMUInfo, SimulationModel, StepProps, StepResponseAnalysis, CharacteristicPoints, AnalysisProps, Signal
 from agent.tools.functions.information import _get_model_description, _get_all_model_descriptions, _get_fmu_names
 from fmpy import simulate_fmu
 
@@ -123,9 +123,12 @@ def simulate_tool(sim: SimulationModel) -> DataModel:
         would be defined as:
             {
                 "timestamps": [0.0, 0.9, 1.0, 1.1, 10.0],
-                "signals": {
-                    "input": [0.0, 0.0, 1.0, 1.0, 1.0]
-                }  
+                "signals": [
+                    {
+                        name: "input",
+                        values: [0.0, 0.0, 1.0, 1.0, 1.0]
+                    }
+                ]  
             }
     """
     FMU_DIR = DEFAULT_FMU_DIR
@@ -209,22 +212,18 @@ def generate_step_tool(step: StepProps) -> DataModel:
     #values[timestamps >= step.step_time] = step.final_value
     return DataModel(
         timestamps=timestamps,
-        signals={step.signal_name: values.tolist()}
+        signals=[Signal(name=step.signal_name, values=values.tolist())]
         )
 
-def _emit_simulation_plot(fmu_name: str, data: DataModel, start_time: float, stop_time: float):
+def _emit_simulation_plot(fmu_name: str, data: DataModel, start_time: float, stop_time: float) -> None:
     """Emit a UI component for simulation results visualization."""
     import json
-    
-    # Extract time and output data
-    time_data = data.timestamps  # Already a list per DataModel schema
-    output_data = {}
-    
-    # Extract each output variable
-    for var_name in data.signals:
-        output_data[var_name] = data.signals[var_name]  # Already a list
-    
-    # Create component spec for AG-UI
+
+    # Extract time and outputs
+    time_data = list(map(float, data.timestamps))
+    output_data = {s.name: list(map(float, s.values)) for s in data.signals}
+
+    # Component spec for your UI
     component_spec = {
         "type": "component",
         "name": "SimulationPlot",
@@ -232,15 +231,16 @@ def _emit_simulation_plot(fmu_name: str, data: DataModel, start_time: float, sto
             "title": f"{fmu_name} Simulation Results",
             "time": time_data,
             "outputs": output_data,
-            "startTime": start_time,
-            "stopTime": stop_time,
-            "fmuName": fmu_name
-        }
+            "startTime": float(start_time),
+            "stopTime": float(stop_time),
+            "fmuName": fmu_name,
+        },
     }
-    
+
     # Emit as AG-UI component event
     print(f"data: {json.dumps(component_spec)}\n\n")
 
+'''
 # CREATE_SIGNAL_DESCRIPTION = 
 # name="create_signal", description=CREATE_SIGNAL_DESCRIPTION
 def create_signal_tool(
@@ -265,7 +265,7 @@ def create_signal_tool(
     _emit_signal_plot(signal_name, timestamps, values)
     
     return signal_data
-
+'''
 
 def _emit_signal_plot(signal_name: str, timestamps: List[float], values: List[float]):
     """Emit a UI component for signal visualization."""
@@ -286,6 +286,7 @@ def _emit_signal_plot(signal_name: str, timestamps: List[float], values: List[fl
     # Emit as AG-UI component event
     print(f"data: {json.dumps(component_spec)}\n\n")
 
+'''
 # MERGE_SIGNALS_DESCRIPTION = 
 # name="merge_signals", description=MERGE_SIGNALS_DESCRIPTION
 def merge_signals_tool(signals: List[DataModel]) -> DataModel:
@@ -300,6 +301,7 @@ def merge_signals_tool(signals: List[DataModel]) -> DataModel:
     """
 
     return merge_signals(signals)
+'''
 
 def analyse_step_response(
     signal_name: str,
@@ -318,7 +320,12 @@ def analyse_step_response(
         StepResponseAnalysis: Step response analysis
     """
     t = np.asarray(data.timestamps, dtype=float)
-    y = np.asarray(data.signals[signal_name], dtype=float)
+    for s in data.signals:
+        if s.name == signal_name:
+            y = np.asarray(s.values, dtype=float)
+            break
+    else:
+        raise ValueError(f"Signal {signal_name} not found in DataModel")
 
     # Basic quantities
     y_start, y_final = float(y[0]), float(y[-1])

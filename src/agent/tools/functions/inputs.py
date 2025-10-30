@@ -1,7 +1,7 @@
 from fmpy import simulate_fmu, read_model_description
 from pathlib import Path
 from typing import List, Dict, Optional
-from agent.tools.functions.schema import DataModel
+from agent.tools.functions.schema import DataModel, Signal
 import numpy as np
 
 def ndarray_to_data_model(data: np.ndarray) -> DataModel:
@@ -14,12 +14,17 @@ def ndarray_to_data_model(data: np.ndarray) -> DataModel:
     Returns:
         DataModel: Contains 'timestamps' and 'signals' for each variable.
     """
+    if data.dtype.names is None or 'time' not in data.dtype.names:
+        raise ValueError("Structured array must have a 'time' field.")
+
     timestamps = data['time'].tolist()
-    signals: Dict[str, List[float]] = {
-        name: data[name].tolist()
-        for name in data.dtype.names
-        if name != 'time'
-    }
+
+    signals = []
+    for name in data.dtype.names:
+        if name != 'time':
+            signals.append(
+                    Signal(name=name, values=data[name].tolist())
+                )
     return DataModel(timestamps=timestamps, signals=signals)
 
 def data_model_to_ndarray(input_model: Optional[DataModel]) -> Optional[np.ndarray]:
@@ -37,18 +42,30 @@ def data_model_to_ndarray(input_model: Optional[DataModel]) -> Optional[np.ndarr
         
     # Extract timestamps and variable names
     timestamps = input_model.timestamps
-    input_vars = list(input_model.signals.keys())
+    n = len(timestamps)
+    if n == 0:
+        raise ValueError("DataModel.timestamps is empty")
 
-    # Define structured dtype: time plus each variable in the model
-    dtype = [('time', 'f8')] + [(name, 'f8') for name in input_vars]
+    # list singal names
+    signal_names = [s.name for s in input_model.signals]
 
-    # Build each row as a tuple: (time, *values)
-    rows = []
-    for idx, t in enumerate(timestamps):
-        values = tuple(input_model.signals[name][idx] for name in input_vars)
-        rows.append((t,) + values)
+    # Define structured dtype
+    dtype = [("time", "f8")] + [(name, "f8") for name in signal_names]
 
-    return np.array(rows, dtype=dtype)
+    # Prepare structured array
+    arr = np.zeros(n, dtype=dtype)
+    arr["time"] = np.asarray(timestamps, dtype=float)
+
+    # Fill in each signal's values
+    for s in input_model.signals:
+        values = np.asarray(s.values, dtype=float)
+        if len(values) != n:
+            raise ValueError(
+                f"Signal '{s.name}' length ({len(values)}) does not match timestamps ({n})"
+            )
+        arr[s.name] = values
+
+    return arr
 
 def create_signal(
         input_name: str,
@@ -60,9 +77,14 @@ def create_signal(
     Returns:
         Structured numpy array with dtype [('time', 'f8'), ...] and one row per timestamp.
     """
+    if len(timestamps) != len(values):
+        raise ValueError("Length of timestamps and values must be the same.")
+    if not all(timestamps[i] < timestamps[i+1] for i in range(len(timestamps) - 1)):
+        raise ValueError("Timestamps must be in ascending order.")
+
     return DataModel(
         timestamps=timestamps,
-        signals={input_name: values}
+        signals=[Signal(name=input_name, values=values)]
     )
 
 def merge_signals(signals: List[DataModel]) -> DataModel:

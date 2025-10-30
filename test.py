@@ -11,7 +11,7 @@ load_dotenv()
 logfire.configure()                 # read .logfire/ or env vars (token, project)
 logfire.instrument_pydantic_ai() 
 
-logfire.info("startup ping", project="fmu-agent", check="ping")
+logfire.info("run test.py", project="fmu-agent")
 
 async def main():
     """Test the FMI agent."""

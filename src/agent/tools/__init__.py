@@ -5,8 +5,8 @@ from .fmi_tools import (
     get_model_description,
     get_fmu_names,
     simulate_tool,
-    create_signal_tool,
-    merge_signals_tool,
+    #create_signal_tool,
+    #merge_signals_tool,
 )
 
 __all__ = [
@@ -14,7 +14,7 @@ __all__ = [
     "get_model_description",
     "get_fmu_names",
     "simulate_tool",
-    "create_signal_tool",
-    "merge_signals_tool",
+    #"create_signal_tool",
+    #"merge_signals_tool",
 ]
 

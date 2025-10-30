@@ -2,9 +2,35 @@ from typing import List, Dict, Optional, Union, Any, Tuple
 from pydantic import BaseModel, HttpUrl, Field, model_validator
 from pydantic_core.core_schema import DateSchema
 
+class Signal(BaseModel):
+    name: str = Field(..., description="Name of the signal")
+    values: List[float] = Field(..., description="List of values corresponding to the timestamps")
+
 class DataModel(BaseModel):
-    timestamps: List[float] = Field(default_factory=list)
-    signals:    Dict[str, List[float]] = Field(default_factory=dict)
+    timestamps: List[float] = Field(
+        default_factory=list,
+        description="List of timestamps"
+    )
+    signals: List[Signal] = Field(
+        default_factory=list,
+        description="List of signals, defined using the Signal schema"
+    )
+
+    @model_validator(mode="after")
+    def check_length(self):
+        """Ensure each signal has same number of values as timestamps."""
+        tlen = len(self.timestamps)
+        for s in self.signals:
+            if len(s.values) != tlen:
+                raise ValueError(
+                    f"Length of timestamps and values in signal '{s.name}' "
+                    f"does not match: timestamps={tlen}, values={len(s.values)}"
+                )
+        return self
+
+#class DataModel(BaseModel):
+#    timestamps: List[float] = Field(default_factory=list)
+#    signals:    Dict[str, List[float]] = Field(default_factory=dict)
 
 class FMUPaths(BaseModel):
     fmu_paths: List[str]

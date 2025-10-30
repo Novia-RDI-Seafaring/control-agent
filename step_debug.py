@@ -25,8 +25,13 @@ def plot_results(
     timestamps = data.timestamps
 
     t = np.asarray(timestamps, dtype=float)
-    y = np.asarray(data.signals["y"], dtype=float)
-    u = np.asarray(data.signals["u"], dtype=float)
+    y = None
+    u = None
+    for s in data.signals:
+        if s.name == "y":
+            y = np.asarray(s.values, dtype=float)
+        elif s.name == "u":
+            u = np.asarray(s.values, dtype=float)
 
     ax = axes[0]
     ax.plot(t, y, label="y", linewidth=2)
