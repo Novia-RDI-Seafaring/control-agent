@@ -28,6 +28,16 @@ When the analysis is complete:
 - Do not call any additional tools after presenting the final answer.
 """
 
+#load keyword descriptions
+keyword_md_path = Path("docs/keywords.md")
+with open(keyword_md_path, "r") as file:
+    KEYWORDS_PROMPT = file.read()
 
 # Alias for backward compatibility
-SYS_PROMPT = SIM_PROMPT
+SYS_PROMPT = f"""
+# INSTRUCTIONS
+{SIM_PROMPT}
+
+# BACKGROUND INFORMATION
+{KEYWORDS_PROMPT}
+"""
