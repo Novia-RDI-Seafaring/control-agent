@@ -100,8 +100,8 @@ simulate_props = SimulationModel(
 
 result = simulate_tool(simulate_props)
 
-print("STEP RESPONSE: ")
-print(result.model_dump_json(indent=2))
+#print("STEP RESPONSE: ")
+#print(result.model_dump_json(indent=2))
 
 ## Analyse results
 

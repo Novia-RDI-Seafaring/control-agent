@@ -106,16 +106,26 @@ def simulate_tool(sim: SimulationModel) -> DataModel:
 
         Example JSON call body:
             {
-                "fmu_name": "BouncingBall",
+                "fmu_name": "PI_FOPDT",
                 "start_time": 0.0,
-                "stop_time": 5.0,
-                "output": ["h", "v"],
+                "stop_time": 30.0,
+                "input": input
+                "output": ["y", "u"],
                 "output_interval": 0.1,
                 "start_values": {
-                    "h": 1.0,
-                    "v": 0.0,
-                    "g": -9.81
+                    "Kp": 1.5,
+                    "Ti": 2.0,
+                    "mode": 1
                 }
+            }
+        where the input_signal is a JSON adhering to the DataModel schama. 
+        In this example a step from 0 to 1 at t=1.0 seconds on the time interval [0, 10.0] seconds, 
+        would be defined as:
+            {
+                "timestamps": [0.0, 0.9, 1.0, 1.1, 10.0],
+                "signals": {
+                    "input": [0.0, 0.0, 1.0, 1.0, 1.0]
+                }  
             }
     """
     FMU_DIR = DEFAULT_FMU_DIR
@@ -161,18 +171,42 @@ def generate_step_tool(step: StepProps) -> DataModel:
     Returns:
         DataModel: Step signal
 
-    Usage: When step singals are passed to other tools as inputs, for example when simulating, make sure thaht the step signal is generated with the correct signal name.
+    Usage: 
+    - Make sure thaht the step signal is generated with the correct signal name when passed to other tools as input.
+    - Make sure the lists of timestamps and values are the same length
+    - Make sure the timestamps are in ascending order
+    - Keep the timestamp and value lists as short as possible. It is enough to define the singal only at timestamps where change happens.
+
+    Example: Generate a step at t=1 seconds on the time interval [0, 10.0] seconds.
+    ```json
+    {
+        "signal_name": "input",
+        "time_range": {
+            "start": 0.0,
+            "stop": 10.0,
+            "sampling_time": 0.1
+        },
+        "step_time": 1.0,
+        "initial_value": 0.0,
+        "final_value": 1.0
+    }
+    ```
+
     """
     start = step.time_range.start
     stop = step.time_range.stop
     dt = step.time_range.sampling_time
 
     # number of samples in interval
-    N = int(round((stop - start) / dt))
+    dt = step.time_range.sampling_time
+    timestamps = np.array([start, step.step_time - dt, step.step_time, step.step_time + dt, stop])
+    values = np.array([step.initial_value, step.initial_value, step.final_value, step.final_value, step.final_value])
+    # number of samples in interval
+    #N = int(round((stop - start) / dt))
 
-    timestamps = np.linspace(start, start + N * dt, N + 1, dtype=float)
-    values = np.full_like(timestamps, step.initial_value, float)
-    values[timestamps >= step.step_time] = step.final_value
+    #timestamps = np.linspace(start, start + N * dt, N + 1, dtype=float)
+    #values = np.full_like(timestamps, step.initial_value, float)
+    #values[timestamps >= step.step_time] = step.final_value
     return DataModel(
         timestamps=timestamps,
         signals={step.signal_name: values.tolist()}
