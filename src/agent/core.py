@@ -15,7 +15,10 @@ from agent.tools.fmi_tools import (
     simulate_tool,
     create_signal_tool,
     merge_signals_tool,
+    generate_step_tool,
+    analyse_step_response
 )
+from agent.tools.functions.schema import DataModel, SimulationModel
 
 # Load environment variables
 load_dotenv()
@@ -58,10 +61,10 @@ def create_agent(
     )
     
     TOOLS = [
-        Tool(get_all_model_descriptions,
-            name="get_all_model_descriptions",
-            description=get_all_model_descriptions.__doc__,
-            takes_ctx=False),
+        #Tool(get_all_model_descriptions,
+        #    name="get_all_model_descriptions",
+        #    description=get_all_model_descriptions.__doc__,
+        #    takes_ctx=False),
         Tool(get_model_description,
             name="get_model_description",
             description=get_model_description.__doc__,
@@ -74,14 +77,22 @@ def create_agent(
             name="simulate_fmu",  # expose the desired tool name
             description=simulate_tool.__doc__,
             takes_ctx=False),
-        Tool(create_signal_tool,
-            name="create_signal",
-            description=create_signal_tool.__doc__,
+        Tool(generate_step_tool,
+            name="generate_step",
+            description=generate_step_tool.__doc__,
             takes_ctx=False),
-        Tool(merge_signals_tool,
-            name="merge_signals",
-            description=merge_signals_tool.__doc__,
+        Tool(analyse_step_response,
+            name="analyse_step_response",
+            description=analyse_step_response.__doc__,
             takes_ctx=False),
+        #Tool(create_signal_tool,
+        #    name="create_signal",
+        #    description=create_signal_tool.__doc__,
+        #    takes_ctx=False),
+        #Tool(merge_signals_tool,
+        #    name="merge_signals",
+        #    description=merge_signals_tool.__doc__,
+        #    takes_ctx=False),
     ]
     
     # Create agent with tools

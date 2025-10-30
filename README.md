@@ -176,6 +176,11 @@ python start_dev.py
 | "Tune the PI controller with Lambda tuning for robust response"       | 1. Select $\lambda \ge 2T$.<br>2. Compute $K_c = \dfrac{T}{K(\lambda + L)}$, $T_i = T$.<br>3. `set_parameters`.      | Controller updated for robust-response tuning.                                  |
 | "Tune the PI controller using Ziegler-Nichols closed-loop method"     | 1. Disable integral action ($T_i \to \infty$).<br>2. Increase $K_p$ until sustained oscillations → record $K_u$, $T_u$.<br>3. Compute $K_p = 0.45K_u$, $T_i = \dfrac{T_u}{1.2}$.<br>4. `set_parameters`. | Controller updated using Ziegler–Nichols closed-loop tuning.                    |
 
+# Logfire
+- Run `logfire auth` and follow instructions to authenticate your local envoronment
+- Point to correct project: `uv run logfire projects use "agent-fmi"`
+- 
+
 
 
 
