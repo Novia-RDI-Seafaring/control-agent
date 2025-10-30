@@ -5,6 +5,24 @@ from pydantic_core.core_schema import DateSchema
 class DataModel(BaseModel):
     timestamps: List[float] = Field(default_factory=list)
     signals:    Dict[str, List[float]] = Field(default_factory=dict)
+    
+    @model_validator(mode="after")
+    def _validate_lengths(self):
+        """Check that all signal value lists have the same length as timestamps."""
+        if not self.timestamps:
+            return self
+        
+        ts_len = len(self.timestamps)
+        
+        for signal_name, values in self.signals.items():
+            if len(values) != ts_len:
+                raise ValueError(
+                    f"Signal '{signal_name}' has {len(values)} values but timestamps has {ts_len} entries. "
+                    f"They must have the same length."
+                )
+        
+        return self
+    
 
 class FMUPaths(BaseModel):
     fmu_paths: List[str]
