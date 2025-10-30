@@ -104,7 +104,7 @@ def simulate_tool(sim: SimulationModel) -> DataModel:
         Returns:
             DataModel: Simulation results
 
-        Example JSON call body:
+        Example: JSON call body:
             {
                 "fmu_name": "PI_FOPDT",
                 "start_time": 0.0,
@@ -130,6 +130,12 @@ def simulate_tool(sim: SimulationModel) -> DataModel:
                     }
                 ]  
             }
+        
+        Usage:
+        - start_time and stop_time determines the timeinterval for the simulation.
+        - input is a DataModel containing the input signal. Step input can be generated with the generate_step_tool.
+        - output is a list of output variable names to record. Not all model outputs have to be returned.
+        - output_interval determines the interval for sampling the output. The is can be different than the simulation step size, often larger.
     """
     FMU_DIR = DEFAULT_FMU_DIR
     if sim.start_values is None:

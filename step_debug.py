@@ -88,17 +88,26 @@ step= generate_step_tool(step_props)
 print("STEP: ")
 print(step.model_dump_json(indent=2))
 
+#example
+K = 1
+T= 2
+L = 1
+lam = L #balanced response
+#lambda tuning
+Kp = T / (K * (lam + L))
+Ti = min(T, 4 * (lam + L))
+
 ## Simulate system
 simulate_props = SimulationModel(
-    fmu_name="PI_FOPDT",
+    fmu_name="PI_FOPDT_2",
     start_time=0.0,
     stop_time=30.0,
     input=step,
     output=["y", "u"],
     output_interval=0.1,
     start_values={
-        "Kp": 0.45*3.8,
-        "Ti": 3.0/1.2,
+        "Kp": Kp,
+        "Ti": Ti,
         "mode": 1
     }
 )
