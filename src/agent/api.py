@@ -4,8 +4,6 @@ from typing import Dict, Any, List, Optional
 from agent.core import create_agent
 
 
-    
-
 class FMIAgent:
     """High-level Python API for FMI Agent."""
 

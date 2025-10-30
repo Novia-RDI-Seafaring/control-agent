@@ -2,8 +2,7 @@ import os
 from typing import List, Optional, Dict, Any
 from dotenv import load_dotenv
 
-from openai import AsyncClient
-from pydantic_ai import Agent, RunContext, AgentRunResultEvent, AgentStreamEvent, agent, Tool
+from pydantic_ai import Agent, Tool
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.azure import AzureProvider
 from httpx import AsyncClient
