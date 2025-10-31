@@ -2,9 +2,10 @@ import matplotlib.pyplot as plt
 from agent.tools.functions.schema import (
     StepProps, TimeRange, SimulationModel, AnalysisProps, 
     DataModel, StepResponseAnalysis,
-    UltimateTuningProps, UltimateGainParameters
+    UltimateTuningProps, UltimateGainParameters,
+    FindPeaksProps, FindPeaksResult, Peak
 )
-from agent.tools.fmi_tools import generate_step_tool, simulate_tool, analyse_step_response, zn_pid_tuning
+from agent.tools.fmi_tools import generate_step_tool, simulate_tool, analyse_step_response, zn_pid_tuning, find_peaks_tool
 import numpy as np
 
 
@@ -98,8 +99,8 @@ simulate_props = SimulationModel(
     output=["y", "u"],
     output_interval=0.1,
     start_values={
-        "Kp": 1.18,
-        "Ti": 2,
+        "Kp": 3.8,
+        "Ti": float("inf"),
         "mode": True
     }
 )
@@ -121,10 +122,12 @@ analysis = analyse_step_response(signal_name="y", data=result, props=analysis_pr
 print("ANALYSIS: ")
 print(analysis.model_dump_json(indent=2))
 
-## Plot results
-plot_results(result, analysis=analysis)
 
-
+## Find peaks
+find_peaks_props = FindPeaksProps(signal_name="y")
+peaks = find_peaks_tool(signal_name="y", data=result, props=find_peaks_props)
+print("PEAKS: ")
+print(peaks.model_dump_json(indent=2))
 
 ## tuning tests
 
@@ -144,9 +147,13 @@ print(tuning.model_dump_json(indent=2))
 K = 1
 T= 2
 L = 1
-lam = 4*L
+lam = L
 #lambda tuning
 Kp = T / (K * (lam + L))
 Ti = min(T, 4 * (lam + L))
 print("Lambda TUNING: ")
 print(f"Kp: {Kp}, Ti: {Ti}")
+
+
+## Plot results
+plot_results(result, analysis=analysis)

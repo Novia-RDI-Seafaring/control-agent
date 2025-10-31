@@ -26,34 +26,17 @@ async def main():
     print("Agent created successfully")
     print(agent)
     
-    # Test query - you can change this to any query
-    # query = "What simulation models do you have available?"
-    # query = "Simualte PI_FOPDT with a step input change"
-    # query = "Simualte a step response and analyse the results. Simulate on time interval [0, 30], do the step at t=1 seconds. Analyze the results. Set mode=1."
-    # query = "Simulate a closed-loop (mode=1) step response on the time interval [0, 60] seconds, where the input changes from 0 to 1 at t=1 seconds. Record results with 1 second intervals. Analyze the results. Use step_size=0.1s."
-    #query = "Simualte from 0 to 60 seconds a step response, where the input (setpoint) changes from 0 to 1 at t=1 seconds. Set mode=1 and tune parameters K_p and T_i, which are the controller gain and integration time constant, respectively, to give approximately 10 percent overshoot. Explain in your result what methods you used to tune the controller. Also return the response of the system with the tuned controller. Record results with 1 second intervals."
-    # query = "Tune the PI controller with Lambda tuning based on experiments for balanced response."
-    # query = "generate a step signal from 0 to 2 at t=2 seconds with a sampling time of 0.1 seconds over the time intnerval [0, 10]. Return the pydantic models of both the argument you passed to the tool and the response, without modifications."
-    #query = (
-    #    "Simulate a step response from 0 to 1 at t=2 seconds in the time interval [0, 10].",
-    #    "Use sampling time 0.1 seconds. Set controller to manual mode (mode=0).",
-    #    "Return step response at 1 second time intervals."
-    #)
-    # query = "Perform an experiment on the model PI_FOPDT_2 to identify a first order system with time delay using a step experiment ontime interval [0, 30]. Set mode=0 (manual) during the experiment. Analyse the results. Return the identified parameters K, T, L aswell as explenations how they were identified."
-    # query = "Explain step by step how you could approximate a FOPDT system from a step response by identifying parameters K, T, L. Do you have access to tools to help you with this? Explain what values from analyse_step_response are useful for this"
-    # query = "List available models and their model descriptions."
-
     queries = {
         "model_description": "List available models and their model descriptions.",
         "open_loop_step": "Simulate an open-loop step response with input change from 0 to 1.",
         "closed_loop_step": "Simulate a closed-loop step response with input change from 0 to 1",
-        "system_identification": "Make a step response and identify the static gain K, time constant T , and dead time L of a FOPDT model",
-        "lambda_tuning": "Tune the PI controller using λ-tuning (for a FOPDT model) for a balanced response.",
+        "system_identification": "Make a step response and identify the static gain K, time constant T, and dead time L of a FOPDT model",
+        "lambda_tuning": "Tune the PI controller using λ-tuning for a balanced response.",
         "z_n": "Perform experiments to tune the PI controller using Ziegler-Nichols closed-loop method. Report the tuned controller parameters Kp, Ti and other intermediate parameters in response.",
-        "tuning_overshoot": "Tune the PI controller to have approximately 10 percentage overshoot",
+        "tuning_overshoot": "Tune the PI controller to have approximately 10 percentage overshoot and rise time less than 2 seconds.",
     }
 
-    query = queries["tuning_overshoot"]
+    query = queries["system_identification"]
 
     print(f"\n2. Running query: '{query}'")
     print("   Waiting for response...\n")

@@ -1,5 +1,5 @@
 from typing import List, Dict, Optional, Union, Any, Literal
-from pydantic import BaseModel, HttpUrl, Field, model_validator
+from pydantic import BaseModel, HttpUrl, Field, model_validator  
 from pydantic_core.core_schema import DateSchema
 
 
@@ -88,7 +88,7 @@ class SimulationModel(BaseModel):
     )
     step_size: Optional[Union[float, str]] = Field(
         default=None,
-        description="Simulation step size"
+        description="Simulation step size. Must be integer multiple ofthe FMU models internal step size."
     )
     input: Optional[DataModel] = Field(
         default=None,
@@ -100,7 +100,7 @@ class SimulationModel(BaseModel):
     )
     output_interval: Union[float, str] = Field(
         default=None,
-        description="Interval for sampling the output"
+        description="Interval for sampling the output. Must be integer multiple of FMU models internal step size."
     )
     start_values: Optional[Dict[str, Any]] = Field(
         default=None,
@@ -145,6 +145,10 @@ class StepProps(BaseModel):
         if not (tr.start <= self.step_time <= tr.stop):
             raise ValueError("step_time must be within [start, stop]")
         return self
+
+################################################################################
+# Analysis
+################################################################################
 
 class AnalysisProps(BaseModel):
     settling_time_treshhold: float = Field(
@@ -206,6 +210,90 @@ class CharacteristicPoints(BaseModel):
         description="(tUndershoot, yUndershoot): Undershoot value (smallest value after RT1) and corresponding time point."
     )
 
+# Peak Analysis
+class FindPeaksProps(BaseModel):
+    height: Optional[float] = Field(
+        default=None,
+        description=(
+            "Required height of peaks. Either a number, None, an array matching x or a 2-element sequence of the former."
+            "The first element is always interpreted as the minimal and the second, if supplied, as the maximal required height."
+        )
+    )
+    threshold: Optional[float] = Field(
+        default=None,
+        description=(
+            "Required threshold of peaks, the vertical distance to its neighboring samples."
+            "Either a number, None, an array matching x or a 2-element sequence of the former."
+            "The first element is always interpreted as the minimal and the second, if supplied, as the maximal required threshold."
+        )
+    )
+    distance: Optional[float] = Field(
+        default=None,
+        description=(
+            "Required distance between peaks. The minimum distance between returned peaks. "
+            "Smaller peaks are removed first until the condition is fulfilled for all remaining peaks."
+        )
+    )
+    prominence: Optional[float] = Field(
+        default=None,
+        description=(
+            "Required prominence of peaks. Either a number, None, an array matching x or a 2-element sequence of the former."
+            "The first element is always interpreted as the minimal and the second, if supplied, as the maximal required prominence."
+        )
+    )
+    width: Optional[float] = Field(
+        default=None,
+        description=(
+            "Required width of peaks in samples. Either a number, None, an array matching x or a 2-element sequence of the former."
+            "The first element is always interpreted as the minimal and the second, if supplied, as the maximal required width"
+        )
+    )
+    wlen: Optional[int] = Field(
+        default=None,
+        description=(
+            "Used for calculation of the peaks prominences, thus it is only used if one of the arguments prominence or width is given."
+            "See argument wlen in peak_prominences for a full description of its effects."
+        )
+    )
+    rel_height: Optional[float] = Field(
+        default=0.5,
+        description=(
+            "Used for calculation of the peaks width, thus it is only used if width is given."
+            "See argument rel_height in peak_widths for a full description of its effects."
+        )
+    )
+    plateau_size: Optional[int] = Field(
+        default=None,
+        description=(
+            "Required size of the flat top of peaks in samples. Either a number, None, an array matching x or a 2-element sequence of the former."
+            "The first element is always interpreted as the minimal and the second, if supplied, as the maximal required plateau size."
+        )
+    )
+
+class Peak(BaseModel):
+    timestamp: float = Field(
+        ...,
+        description="Timestamp of the peak"
+    )
+    value: float = Field(
+        ...,
+        description="Value of the peak"
+    )
+
+class FindPeaksResult(BaseModel):
+    peaks: List[Peak] = Field(
+        ...,
+        description="List of peaks (timestamps and values) in signal that satisfy all given conditions."
+    )
+    average_peak_period: float = Field(
+        ...,
+        description="Average period of the peaks"
+    )
+    properties: Dict[str, float] = Field(
+        ...,
+        description="Properties of the peaks"
+    )
+
 class StepResponseAnalysis(BaseModel):
     characteristic_points: CharacteristicPoints = Field(
         ...,
@@ -241,6 +329,10 @@ class StepResponseAnalysis(BaseModel):
     undershoot: Optional[float] = Field(
         default=None,
         description="Percent undershoot: (min - initial)/|final - initial| * 100 (reported as ≥ 0)."
+    )
+    peaks: List[Peak] = Field(
+        ...,
+        description="List of peaks (timestamps and values) in signal that satisfy all given conditions."
     )
 
 

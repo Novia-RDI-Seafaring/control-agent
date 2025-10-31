@@ -14,9 +14,11 @@ from agent.tools.functions.schema import (
     SimulationModel, StepProps, StepResponseAnalysis,
     CharacteristicPoints, AnalysisProps, Signal,
     UltimateTuningProps, PIDParameters,
+    FindPeaksProps, FindPeaksResult, Peak
     )
 from agent.tools.functions.information import _get_model_description, _get_all_model_descriptions, _get_fmu_names
 from fmpy import simulate_fmu
+from scipy.signal import find_peaks
 
 import numpy as np
 
@@ -322,6 +324,34 @@ def merge_signals_tool(signals: List[DataModel]) -> DataModel:
     return merge_signals(signals)
 '''
 
+
+def find_peaks_tool(signal_name: str, data: DataModel, props: FindPeaksProps) -> FindPeaksResult:
+    """
+    Find peaks inside a signal based on peak properties.
+
+    This function takes DataModel and finds all local maxima by simple comparison of neighboring values.
+    Optionally, a subset of these peaks can be selected by specifying conditions for a peak's properties.
+    """
+    t = np.asarray(data.timestamps, dtype=float)
+    for s in data.signals:
+        if s.name == signal_name:
+            x = np.asarray(s.values, dtype=float)
+            break
+    else:
+        raise ValueError(f"Signal {signal_name} not found in DataModel")
+
+    peaks, properties = find_peaks(x, height=props.height, threshold=props.threshold, distance=props.distance, prominence=props.prominence, width=props.width, wlen=props.wlen, rel_height=props.rel_height, plateau_size=props.plateau_size)
+    
+    peak_timestamps = [t[p] for p in peaks]
+    if len(peak_timestamps) >= 2:
+        average_peak_period = float(np.mean(np.diff(peak_timestamps)))
+    else:
+        # If less than 2 peaks, set period to NaN or 0
+        average_peak_period = float("nan")
+
+    return FindPeaksResult(peaks=[Peak(timestamp=t[p], value=x[p]) for p in peaks], average_peak_period=average_peak_period, properties=properties)
+
+
 def analyse_step_response(
     signal_name: str,
     data: DataModel,
@@ -336,25 +366,28 @@ def analyse_step_response(
         props: AnalysisProps containing the analysis properties
 
     Returns:
-        StepResponseAnalysis: Step response analysis
+        StepResponseAnalysis: Step response analysis which containt **critical points* and **metrics** useful for finetuning controller performance.
+            - p0 = (t0,y0) point when output starts to change from initial value.
+            - p10 = (t10,y10) point when output first reachest 10% of total change.
+            - p63 = (t63,y63) point when output first reachest 63% of total change. Can be used to determine the time constant T of a FOPDT system.
+            - p90 = (t90,y90) point when output first reachest 90% of total change.
+            - p98 = (t98,y98) point when output first reachest 98% of total change.
+            - pRT0 = (tRT0,yRT0) point when output first reachest RT(0) of total change.
+            - pRT1 = (tRT1,yRT1) point when output first reachest RT(1) of total change.
+            - pST = (tST,yST) point when output first reachest ST of total change.
+            - pPeak = (tPeak,yPeak) point when output first reachest Peak of total change.
+            - pUndershoot = (tUndershoot,yUndershoot) point when output first reachest Undershoot of total change.
+        - Rise time: time it takes for the response to rise from 10% to 90% of the final value. **This is useful when evaluating of finetuning controller performance.**
+        - Settling time: time it takes for the response to settle within 2% of the final value. **This is useful when evaluating of finetuning controller performance.**
+        - Settling min: minimum response value observed while evaluating settling behavior. **This is useful when evaluating of finetuning controller performance.**
+        - Settling max: maximum response value observed while evaluating settling behavior. **This is useful when evaluating of finetuning controller performance.**
+        - Overshoot: percentage of the final value that the response exceeds. **This is useful when evaluating of finetuning controller performance.**
+        - Undershoot: percentage of the final value that the response undershoots. **This is useful when evaluating of finetuning controller performance.**
 
-    Usage: Use this tool when analysing step response data. This tool returns characteristic points (time, value):
-        - p0 = (t0,y0) point when output starts to change from initial value.
-        - p10 = (t10,y10) point when output first reachest 10% of total change.
-        - p63 = (t63,y63) point when output first reachest 63% of total change. Can be used to determine the time constant T of a FOPDT system.
-        - p90 = (t90,y90) point when output first reachest 90% of total change.
-        - p98 = (t98,y98) point when output first reachest 98% of total change.
-        - pRT0 = (tRT0,yRT0) point when output first reachest RT(0) of total change.
-        - pRT1 = (tRT1,yRT1) point when output first reachest RT(1) of total change.
-        - pST = (tST,yST) point when output first reachest ST of total change.
-        - pPeak = (tPeak,yPeak) point when output first reachest Peak of total change.
-        - pUndershoot = (tUndershoot,yUndershoot) point when output first reachest Undershoot of total change.
-    - Rise time: time it takes for the response to rise from 10% to 90% of the final value. **This is useful when evaluating of finetuning controller performance.**
-    - Settling time: time it takes for the response to settle within 2% of the final value. **This is useful when evaluating of finetuning controller performance.**
-    - Settling min: minimum response value observed while evaluating settling behavior. **This is useful when evaluating of finetuning controller performance.**
-    - Settling max: maximum response value observed while evaluating settling behavior. **This is useful when evaluating of finetuning controller performance.**
-    - Overshoot: percentage of the final value that the response exceeds. **This is useful when evaluating of finetuning controller performance.**
-    - Undershoot: percentage of the final value that the response undershoots. **This is useful when evaluating of finetuning controller performance.**
+    Usage: 
+    - Use this tool whenever analysing step response data.
+    - Use this tool to get controll metrics whenever possible.
+        
     """
     t = np.asarray(data.timestamps, dtype=float)
     for s in data.signals:
@@ -495,6 +528,9 @@ def analyse_step_response(
         y_safe = y_val if y_val is not None else get_value(t_val)
         return (t_safe, y_safe)
 
+    # find peaks
+    peaks_result = find_peaks_tool(signal_name=signal_name, data=data, props=FindPeaksProps(signal_name=signal_name))
+
     return StepResponseAnalysis(
         characteristic_points=CharacteristicPoints(
             p0=cp(t_initial, y_start),
@@ -509,6 +545,7 @@ def analyse_step_response(
         settling_max=settling_max,
         overshoot=overshoot,
         undershoot=undershoot,
+        peaks=peaks_result.peaks,
     )
 
 def zn_pid_tuning(props: UltimateTuningProps) -> PIDParameters:
