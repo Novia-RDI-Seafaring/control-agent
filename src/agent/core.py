@@ -29,6 +29,7 @@ def create_agent(
     temperature: float = 0.0,
     verbose: bool = False,
     max_iterations: int = 20,
+    max_retries: int = 1,
 ):
     """Create FMI agent with tools.
     
@@ -37,7 +38,7 @@ def create_agent(
         temperature: LLM temperature
         verbose: Enable verbose logging
         max_iterations: Maximum iterations (not used by pydantic_ai directly)
-        
+        max_retries: Maximum retries for tool calls
     Returns:
         Configured pydantic_ai Agent
     """
@@ -103,6 +104,7 @@ def create_agent(
         instructions=SYS_PROMPT,
         name="FMIAgent",
         tools=TOOLS,
+        retries=max_retries
     )
     
     return fmi_agent
