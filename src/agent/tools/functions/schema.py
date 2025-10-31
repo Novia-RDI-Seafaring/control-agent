@@ -1,4 +1,4 @@
-from typing import List, Dict, Optional, Union, Any, Tuple
+from typing import List, Dict, Optional, Union, Any, Literal
 from pydantic import BaseModel, HttpUrl, Field, model_validator
 from pydantic_core.core_schema import DateSchema
 
@@ -237,3 +237,34 @@ class StepResponseAnalysis(BaseModel):
         default=None,
         description="Percent undershoot: (min - initial)/|final - initial| * 100 (reported as ≥ 0)."
     )
+
+
+################################################################################
+# Controller Tuning
+################################################################################
+class UltimateGainParameters(BaseModel):
+    Ku: float = Field(..., description="Ultimate gain")
+    Pu: float = Field(..., description="Ultimate period")
+
+class UltimateTuningProps(BaseModel):
+    params: UltimateGainParameters
+    controller: Literal["p", "pi", "pd", "pid"]
+    method: Literal[
+        "classic",
+        "some_overshoot",
+        "no_overshoot"
+    ] = "classic"
+
+    @model_validator(mode="after")
+    def _check_conroller_method_combination(self):
+        if self.controller in ["p", "pi", "pd"] and self.method != "classic":
+            raise ValueError(
+                f"Invalide controller/method combination: controller='{self.controller}', method='{self.method}'"
+                f"Only the 'classic' method supports tuning of controllers 'p', 'pi', and 'pd'"
+                )
+        return self
+
+class PIDParameters(BaseModel):
+    Kp: float = Field(default=1.0, description="Proportional gain")
+    Ti: float = Field(default=float("inf"), description="Integration time constant")
+    Td: float = Field(default=0.0, description="Derivative time constant")

@@ -1,9 +1,10 @@
 import matplotlib.pyplot as plt
 from agent.tools.functions.schema import (
     StepProps, TimeRange, SimulationModel, AnalysisProps, 
-    DataModel, StepResponseAnalysis
+    DataModel, StepResponseAnalysis,
+    UltimateTuningProps, UltimateGainParameters
 )
-from agent.tools.fmi_tools import generate_step_tool, simulate_tool, analyse_step_response
+from agent.tools.fmi_tools import generate_step_tool, simulate_tool, analyse_step_response, zn_pid_tuning
 import numpy as np
 
 
@@ -88,15 +89,6 @@ step= generate_step_tool(step_props)
 print("STEP: ")
 print(step.model_dump_json(indent=2))
 
-#example
-K = 1
-T= 2
-L = 1
-lam = L #balanced response
-#lambda tuning
-Kp = T / (K * (lam + L))
-Ti = min(T, 4 * (lam + L))
-
 ## Simulate system
 simulate_props = SimulationModel(
     fmu_name="PI_FOPDT_2",
@@ -106,8 +98,8 @@ simulate_props = SimulationModel(
     output=["y", "u"],
     output_interval=0.1,
     start_values={
-        "Kp": Kp,
-        "Ti": Ti,
+        "Kp": 1.71,
+        "Ti": 2.84,
         "mode": 1
     }
 )
@@ -131,3 +123,30 @@ print(analysis.model_dump_json(indent=2))
 
 ## Plot results
 plot_results(result, analysis=analysis)
+
+
+
+## tuning tests
+
+#Z-N tuning
+tuning_props = UltimateTuningProps(
+    params=UltimateGainParameters(Ku=3.8, Pu=3.41),
+    controller="pi",
+    method="classic"
+)
+
+tuning = zn_pid_tuning(tuning_props)
+print("Z-N TUNING: ")
+print(tuning.model_dump_json(indent=2))
+
+
+#lambda tuning
+K = 1
+T= 2
+L = 1
+lam = L #balanced response
+#lambda tuning
+Kp = T / (K * (lam + L))
+Ti = min(T, 4 * (lam + L))
+print("Lambda TUNING: ")
+print(f"Kp: {Kp}, Ti: {Ti}")

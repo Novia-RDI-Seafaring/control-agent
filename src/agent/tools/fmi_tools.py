@@ -3,8 +3,18 @@
 from typing import List
 from pathlib import Path
 
+from fastapi._compat.v1 import BaseModel
+from matplotlib.pyplot import cla
+from pydantic import Field
+from typing import Literal
+
 from agent.tools.functions.inputs import create_signal, merge_signals, data_model_to_ndarray, ndarray_to_data_model
-from agent.tools.functions.schema import FMUCollection, DataModel, FMUInfo, SimulationModel, StepProps, StepResponseAnalysis, CharacteristicPoints, AnalysisProps, Signal
+from agent.tools.functions.schema import (
+    FMUCollection, DataModel, FMUInfo,
+    SimulationModel, StepProps, StepResponseAnalysis,
+    CharacteristicPoints, AnalysisProps, Signal,
+    UltimateTuningProps, PIDParameters,
+    )
 from agent.tools.functions.information import _get_model_description, _get_all_model_descriptions, _get_fmu_names
 from fmpy import simulate_fmu
 
@@ -479,3 +489,97 @@ def analyse_step_response(
         overshoot=overshoot,
         undershoot=undershoot,
     )
+
+def zn_pid_tuning(props: UltimateTuningProps) -> PIDParameters:
+    """
+    Compute PID controller parameters using the Ziegler-Nichols closed-loop
+    (also called ultimate gain or continuous-cycling) tuning method.
+
+    This function implements the standard Ziegler-Nichols closed-loop tuning rules.
+    It uses the experimentally determined **ultimate gain (Ku)** and **ultimate period (Pu)**
+    obtained from a continuous-cycling test (sustained oscillation test).
+    
+    The function supports several controller configurations (P, PI, PD, PID)
+    and tuning rule variants ("classic", "some_overshoot", "no_overshoot").
+
+    ---
+    ### Usage logic
+    - For controllers `p`, `pi`, or `pd`, only the `"classic"` method is valid.
+    - For `pid` controllers, all three methods are supported.
+    - Any other `(controller, method)` combination raises a `ValueError`.
+
+    ---
+    ### Args:
+        props (UltimateTuningProps):
+            A model specifying:
+              - `params.Ku` (float): the ultimate gain determined experimentally.
+              - `params.Pu` (float): the oscillation period at the ultimate gain.
+              - `controller` (Literal["p", "pi", "pd", "pid"]): the controller type.
+              - `method` (Literal["classic", "some_overshoot", "no_overshoot"]):
+                the tuning variant to apply. Defaults to `"classic"`.
+
+    ---
+    ### Returns:
+        PIDParameters:
+            A data model containing:
+              - `Kp` (float): proportional gain.
+              - `Ti` (float): integral time constant (∞ if not applicable).
+              - `Td` (float): derivative time constant (0 if not applicable).
+
+    ---
+    ### Raises:
+        ValueError:
+            If the controller/method combination is unsupported or invalid.
+
+    ---
+    ### Example usage:
+    - Before using this method, perform a closed-loop tuning test with a P-only controller (set I = 0, D = 0).
+    - Gradually increase the proportional gain until the system exhibits sustained oscillations.
+    - The gain at this point is the ultimate gain (Ku).
+    - The oscillation period is the ultimate period (Pu).
+    - Pass these values to the function using an argument that complies with the UltimateTuningProps schema.
+    ```json
+    {
+        "params": {
+            "Ku": ...,
+            "Pu": ...
+        },
+        "controller": ...,
+        "method": ...
+    }
+    ```
+    """
+    Ku, Pu = props.params.Ku, props.params.Pu
+    ctrl, method = props.controller, props.method
+
+    match (ctrl, method):
+        # --- P controller ---
+        case ("p", "classic"):
+            return PIDParameters(Kp=0.5 * Ku)
+
+        # --- PI controller ---
+        case ("pi", "classic"):
+            return PIDParameters(Kp=0.45 * Ku, Ti=Pu / 1.2)
+
+        # --- PD controller ---
+        case ("pd", "classic"):
+            return PIDParameters(Kp=0.8 * Ku, Td=Pu / 8.0)
+
+        # --- PID controller: variants ---
+        case ("pid", "classic"):
+            return PIDParameters(Kp=0.6 * Ku, Ti=Pu / 2.0, Td=Pu / 8.0)
+
+        case ("pid", "some_overshoot"):
+            # Slightly less aggressive than classic Z–N
+            return PIDParameters(Kp=(1.0 / 3.0) * Ku, Ti=Pu / 2.0, Td=Pu / 3.0)
+
+        case ("pid", "no_overshoot"):
+            # Conservative, smooth response
+            return PIDParameters(Kp=0.20 * Ku, Ti=Pu / 2.0, Td=Pu / 3.0)
+            
+        #anything else
+        case _:
+            raise ValueError(
+                f"Unsupported controller/method combination: "
+                f"controller='{ctrl}', method='{method}'"
+            )

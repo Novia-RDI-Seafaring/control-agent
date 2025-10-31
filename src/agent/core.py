@@ -13,7 +13,8 @@ from agent.tools.fmi_tools import (
     get_fmu_names,
     simulate_tool,
     generate_step_tool,
-    analyse_step_response
+    analyse_step_response,
+    zn_pid_tuning
 )
 from agent.tools.functions.schema import DataModel, SimulationModel
 
@@ -81,6 +82,10 @@ def create_agent(
         Tool(analyse_step_response,
             name="analyse_step_response",
             description=analyse_step_response.__doc__,
+            takes_ctx=False),
+        Tool(zn_pid_tuning,
+            name="zn_pid_tuning",
+            description=zn_pid_tuning.__doc__,
             takes_ctx=False),
         #Tool(create_signal_tool,
         #    name="create_signal",
