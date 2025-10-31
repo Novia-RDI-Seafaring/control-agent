@@ -2,6 +2,11 @@ from typing import List, Dict, Optional, Union, Any, Literal
 from pydantic import BaseModel, HttpUrl, Field, model_validator
 from pydantic_core.core_schema import DateSchema
 
+
+################################################################################
+# Simulation
+################################################################################
+
 class Signal(BaseModel):
     name: str = Field(..., description="Name of the signal")
     values: List[float] = Field(..., description="List of values corresponding to the timestamps")

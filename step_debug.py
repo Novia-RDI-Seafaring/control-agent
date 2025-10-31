@@ -80,12 +80,12 @@ def plot_results(
 step_props = StepProps(
     signal_name="input",
     time_range=TimeRange(start=0.0, stop=30.0, sampling_time=0.1),
-    step_time=2.0,
+    step_time=1.0,
     initial_value=0.0,
     final_value=1.0
 )
 
-step= generate_step_tool(step_props)
+step = generate_step_tool(step_props)
 print("STEP: ")
 print(step.model_dump_json(indent=2))
 
@@ -98,9 +98,9 @@ simulate_props = SimulationModel(
     output=["y", "u"],
     output_interval=0.1,
     start_values={
-        "Kp": 1.71,
-        "Ti": 2.84,
-        "mode": 1
+        "Kp": 1.18,
+        "Ti": 2,
+        "mode": True
     }
 )
 
@@ -130,7 +130,7 @@ plot_results(result, analysis=analysis)
 
 #Z-N tuning
 tuning_props = UltimateTuningProps(
-    params=UltimateGainParameters(Ku=3.8, Pu=3.41),
+    params=UltimateGainParameters(Ku=3.82, Pu=3.48),
     controller="pi",
     method="classic"
 )
@@ -144,7 +144,7 @@ print(tuning.model_dump_json(indent=2))
 K = 1
 T= 2
 L = 1
-lam = L #balanced response
+lam = 4*L
 #lambda tuning
 Kp = T / (K * (lam + L))
 Ti = min(T, 4 * (lam + L))
