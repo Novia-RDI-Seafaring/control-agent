@@ -81,6 +81,7 @@ def create_agent(
         Tool(analyse_step_response,
             name="analyse_step_response",
             description=analyse_step_response.__doc__,
+            max_retries=3, 
             takes_ctx=False),
         #Tool(create_signal_tool,
         #    name="create_signal",

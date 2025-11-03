@@ -3,8 +3,9 @@
 from typing import List
 from pathlib import Path
 
+from agent.tools.functions.artifacts import make_figure, build_dash_layout, plot_in_browser
 from agent.tools.functions.inputs import create_signal, merge_signals, data_model_to_ndarray, ndarray_to_data_model
-from agent.tools.functions.schema import FMUCollection, DataModel, FMUInfo, SimulationModel, StepProps, StepResponseAnalysis, CharacteristicPoints, AnalysisProps, Signal
+from agent.tools.functions.schema import FMUCollection, DataModel, FMUInfo, SimulationModel, StepProps, StepResponseAnalysis, CharacteristicPoints, AnalysisProps, Signal, PlotHttpURL
 from agent.tools.functions.information import _get_model_description, _get_all_model_descriptions, _get_fmu_names
 from fmpy import simulate_fmu
 
@@ -14,7 +15,23 @@ import numpy as np
 DEFAULT_FMU_DIR = (Path(__file__).parents[3] / "models" / "fmus").resolve()
 
 
-######### TOOLS #########
+#### Figures ####
+def get_figure() -> Signal:
+    """
+    Use the signal and title from the final datamodel to generate figure
+    """
+    
+    return make_figure
+
+def make_dash_layout(inputs: DataModel, outputs: DataModel) -> PlotHttpURL:
+    
+    return build_dash_layout(inputs, outputs)
+
+def make_dash_layout(inputs: DataModel, outputs: DataModel, port: int = 8051) -> PlotHttpURL:
+    
+    return build_dash_layout(inputs, outputs)
+
+######### Simulation TOOLS #########
 #GET_ALL_MODEL_DESCRIPTIONS_DESCRIPTION
 # name="get_model_descriptions", 
 # description=GET_ALL_MODEL_DESCRIPTIONS_DESCRIPTION
@@ -46,39 +63,8 @@ def get_model_description(fmu_name: str) -> FMUInfo:
     FMU_DIR = DEFAULT_FMU_DIR
     fmu_info = _get_model_description(FMU_DIR, fmu_name)
     
-    # Emit UI component for model information
-    _emit_model_info_card(fmu_info)
-    
     return fmu_info
 
-
-def _emit_model_info_card(fmu_info: FMUInfo):
-    """Emit a UI component for FMU model information display."""
-    import json
-    
-    # Create component spec
-    component_spec = {
-        "type": "component",
-        "name": "ModelInfoCard",
-        "props": {
-            "name": fmu_info.name,
-            "description": fmu_info.description,
-            "fmiVersion": fmu_info.metadata.fmi_version,
-            "author": fmu_info.metadata.author,
-            "version": fmu_info.metadata.version,
-            "inputs": fmu_info.variables.inputs,
-            "outputs": fmu_info.variables.outputs,
-            "parameters": fmu_info.variables.parameters,
-            "simulation": {
-                "startTime": fmu_info.simulation.start_time,
-                "stopTime": fmu_info.simulation.stop_time,
-                "tolerance": fmu_info.simulation.tolerance
-            }
-        }
-    }
-    
-    # Emit as AG-UI component event
-    print(f"data: {json.dumps(component_spec)}\n\n")
 
 # GET_FMU_NAMES_DESCRIPTION = 
 # name="get_fmu_names", description=GET_FMU_NAMES_DESCRIPTION
@@ -159,9 +145,7 @@ def simulate_tool(sim: SimulationModel) -> DataModel:
 
     data_model = ndarray_to_data_model(results)
     
-    # Emit UI component for simulation results
-    _emit_simulation_plot(sim.fmu_name, data_model, sim.start_time, sim.stop_time)
-    
+    print(f"The Data Model", data_model) 
     return data_model
 
 def generate_step_tool(step: StepProps) -> DataModel:
@@ -214,77 +198,6 @@ def generate_step_tool(step: StepProps) -> DataModel:
         timestamps=timestamps,
         signals=[Signal(name=step.signal_name, values=values.tolist())]
         )
-
-def _emit_simulation_plot(fmu_name: str, data: DataModel, start_time: float, stop_time: float) -> None:
-    """Emit a UI component for simulation results visualization."""
-    import json
-
-    # Extract time and outputs
-    time_data = list(map(float, data.timestamps))
-    output_data = {s.name: list(map(float, s.values)) for s in data.signals}
-
-    # Component spec for your UI
-    component_spec = {
-        "type": "component",
-        "name": "SimulationPlot",
-        "props": {
-            "title": f"{fmu_name} Simulation Results",
-            "time": time_data,
-            "outputs": output_data,
-            "startTime": float(start_time),
-            "stopTime": float(stop_time),
-            "fmuName": fmu_name,
-        },
-    }
-
-    # Emit as AG-UI component event
-    print(f"data: {json.dumps(component_spec)}\n\n")
-
-'''
-# CREATE_SIGNAL_DESCRIPTION = 
-# name="create_signal", description=CREATE_SIGNAL_DESCRIPTION
-def create_signal_tool(
-    signal_name: str,
-    timestamps: List[float],
-    values: List[float]
-) -> DataModel:
-    """
-        Creates a single signal.
-        
-        Args:
-            signal_name (str): Name of the signal
-            timestamps (List(float)): List of timestamps
-            values (List(float)): List of signal values corresponsing to the timestamps.
-
-        Returns:
-            DataModel
-    """
-    signal_data = create_signal(signal_name, timestamps, values)
-    
-    # Emit UI component for signal visualization
-    _emit_signal_plot(signal_name, timestamps, values)
-    
-    return signal_data
-'''
-
-def _emit_signal_plot(signal_name: str, timestamps: List[float], values: List[float]):
-    """Emit a UI component for signal visualization."""
-    import json
-    
-    # Create component spec
-    component_spec = {
-        "type": "component",
-        "name": "SignalPlot",
-        "props": {
-            "title": f"Signal: {signal_name}",
-            "time": timestamps,
-            "values": values,
-            "signalName": signal_name
-        }
-    }
-    
-    # Emit as AG-UI component event
-    print(f"data: {json.dumps(component_spec)}\n\n")
 
 '''
 # MERGE_SIGNALS_DESCRIPTION = 
