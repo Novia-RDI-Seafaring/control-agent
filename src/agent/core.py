@@ -13,7 +13,8 @@ from agent.tools.fmi_tools import (
     get_fmu_names,
     simulate_tool,
     generate_step_tool,
-    analyse_step_response
+    analyse_step_response,
+    zn_pid_tuning
 )
 from agent.tools.functions.schema import DataModel, SimulationModel
 
@@ -28,6 +29,7 @@ def create_agent(
     temperature: float = 0.0,
     verbose: bool = False,
     max_iterations: int = 20,
+    max_retries: int = 1,
 ):
     """Create FMI agent with tools.
     
@@ -36,7 +38,7 @@ def create_agent(
         temperature: LLM temperature
         verbose: Enable verbose logging
         max_iterations: Maximum iterations (not used by pydantic_ai directly)
-        
+        max_retries: Maximum retries for tool calls
     Returns:
         Configured pydantic_ai Agent
     """
@@ -83,6 +85,10 @@ def create_agent(
             description=analyse_step_response.__doc__,
             max_retries=3, 
             takes_ctx=False),
+        Tool(zn_pid_tuning,
+            name="zn_pid_tuning",
+            description=zn_pid_tuning.__doc__,
+            takes_ctx=False),
         #Tool(create_signal_tool,
         #    name="create_signal",
         #    description=create_signal_tool.__doc__,
@@ -99,6 +105,7 @@ def create_agent(
         instructions=SYS_PROMPT,
         name="FMIAgent",
         tools=TOOLS,
+        retries=max_retries
     )
     
     return fmi_agent

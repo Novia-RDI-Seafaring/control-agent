@@ -1,9 +1,11 @@
 import matplotlib.pyplot as plt
 from agent.tools.functions.schema import (
     StepProps, TimeRange, SimulationModel, AnalysisProps, 
-    DataModel, StepResponseAnalysis
+    DataModel, StepResponseAnalysis,
+    UltimateTuningProps, UltimateGainParameters,
+    FindPeaksProps, FindPeaksResult, Peak
 )
-from agent.tools.fmi_tools import generate_step_tool, simulate_tool, analyse_step_response
+from agent.tools.fmi_tools import generate_step_tool, simulate_tool, analyse_step_response, zn_pid_tuning, find_peaks_tool
 import numpy as np
 
 
@@ -79,27 +81,27 @@ def plot_results(
 step_props = StepProps(
     signal_name="input",
     time_range=TimeRange(start=0.0, stop=30.0, sampling_time=0.1),
-    step_time=2.0,
+    step_time=1.0,
     initial_value=0.0,
     final_value=1.0
 )
 
-step= generate_step_tool(step_props)
+step = generate_step_tool(step_props)
 print("STEP: ")
 print(step.model_dump_json(indent=2))
 
 ## Simulate system
 simulate_props = SimulationModel(
-    fmu_name="PI_FOPDT",
+    fmu_name="PI_FOPDT_2",
     start_time=0.0,
     stop_time=30.0,
     input=step,
     output=["y", "u"],
     output_interval=0.1,
     start_values={
-        "Kp": 0.45*3.8,
-        "Ti": 3.0/1.2,
-        "mode": 1
+        "Kp": 3.8,
+        "Ti": float("inf"),
+        "mode": True
     }
 )
 
@@ -119,6 +121,39 @@ analysis = analyse_step_response(signal_name="y", data=result, props=analysis_pr
 
 print("ANALYSIS: ")
 print(analysis.model_dump_json(indent=2))
+
+
+## Find peaks
+find_peaks_props = FindPeaksProps(signal_name="y")
+peaks = find_peaks_tool(signal_name="y", data=result, props=find_peaks_props)
+print("PEAKS: ")
+print(peaks.model_dump_json(indent=2))
+
+## tuning tests
+
+#Z-N tuning
+tuning_props = UltimateTuningProps(
+    params=UltimateGainParameters(Ku=3.82, Pu=3.48),
+    controller="pi",
+    method="classic"
+)
+
+tuning = zn_pid_tuning(tuning_props)
+print("Z-N TUNING: ")
+print(tuning.model_dump_json(indent=2))
+
+
+#lambda tuning
+K = 1
+T= 2
+L = 1
+lam = L
+#lambda tuning
+Kp = T / (K * (lam + L))
+Ti = min(T, 4 * (lam + L))
+print("Lambda TUNING: ")
+print(f"Kp: {Kp}, Ti: {Ti}")
+
 
 ## Plot results
 plot_results(result, analysis=analysis)

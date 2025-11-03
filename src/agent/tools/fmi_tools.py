@@ -3,11 +3,23 @@
 from typing import List
 from pathlib import Path
 
+from fastapi._compat.v1 import BaseModel
+from matplotlib.pyplot import cla
+from pydantic import Field
+from typing import Literal
+
 from agent.tools.functions.artifacts import make_figure, build_dash_layout, plot_in_browser
 from agent.tools.functions.inputs import create_signal, merge_signals, data_model_to_ndarray, ndarray_to_data_model
-from agent.tools.functions.schema import FMUCollection, DataModel, FMUInfo, SimulationModel, StepProps, StepResponseAnalysis, CharacteristicPoints, AnalysisProps, Signal, PlotHttpURL
+from agent.tools.functions.schema import (
+    FMUCollection, DataModel, FMUInfo,
+    SimulationModel, StepProps, StepResponseAnalysis,
+    CharacteristicPoints, AnalysisProps, Signal,
+    UltimateTuningProps, PIDParameters,
+    FindPeaksProps, FindPeaksResult, Peak, PlotHttpURL
+    )
 from agent.tools.functions.information import _get_model_description, _get_all_model_descriptions, _get_fmu_names
 from fmpy import simulate_fmu
+from scipy.signal import find_peaks
 
 import numpy as np
 
@@ -82,41 +94,50 @@ def get_fmu_names() -> List[str]:
 # name="simulate_fmu", description=SIMULATION_DESCRIPTION
 def simulate_tool(sim: SimulationModel) -> DataModel:
     """
-        Simulates a given FMU model.
+    ### Tool: simulate_fmu_model
 
-        Args:
-            sim: SimulationModel containing the simulation parameters
-            
-        Returns:
-            DataModel: Simulation results
+    Args:
+        sim: SimulationModel containing the simulation parameters
+        
+    Returns:
+        DataModel: simulation results
 
-        Example JSON call body:
-            {
-                "fmu_name": "PI_FOPDT",
-                "start_time": 0.0,
-                "stop_time": 30.0,
-                "input": input
-                "output": ["y", "u"],
-                "output_interval": 0.1,
-                "start_values": {
-                    "Kp": 1.5,
-                    "Ti": 2.0,
-                    "mode": 1
-                }
-            }
-        where the input_signal is a JSON adhering to the DataModel schama. 
-        In this example a step from 0 to 1 at t=1.0 seconds on the time interval [0, 10.0] seconds, 
-        would be defined as:
-            {
-                "timestamps": [0.0, 0.9, 1.0, 1.1, 10.0],
-                "signals": [
-                    {
-                        name: "input",
-                        values: [0.0, 0.0, 1.0, 1.0, 1.0]
-                    }
-                ]  
-            }
+    **Purpose:**  
+    Run a time-domain simulation of a Functional Mock-up Unit (FMU) model using the specified parameters and input signals.
+
+    **When to use:**  
+    Use this tool whenever you need to simulate the dynamic response of an FMU model.
+
+    **IMPORTANT**  
+    - Do **not** approximate or reason about simulation results — always call this tool to obtain actual simulated outputs.
+
+    **Inputs:**  
+    Accepts a JSON object matching the `SimulationModel` schema with the following fields:  
+    - `fmu_name` (string) — Name of the FMU to simulate.
+    - `start_time` (float) — Simulation start time (in seconds). Typically 0.0 seconds.
+    - `stop_time` (float) — Simulation stop time (in seconds).  
+    - `input` (DataModel) — Input signal(s) defined over the time interval.
+    - `output` (list[string]) — Names of FMU output variables to record.  
+    - `output_interval` (float) — Sampling interval for recorded outputs. Use an interval that is neither too short nor too long.
+    - `start_values` (object) — Use this to set parameter values or initial states for the FMU (e.g., controller gains).
+
+    **Outputs:**  
+    Returns a `DataModel` object containing the simulation results, including:  
+    - `timestamps` — Time points where output values are sampled.  
+    - `signals` — Recorded outputs corresponding to the requested variables.
+
+    **Usage notes:**
+    - `fmu_name` is the name of the FMU model to simulate. Use the `get_fmu_names` tool to list available model names.   
+    - `start_time` and `stop_time` define the simulation interval.
+    - `input` is a `DataModel` describing the input signal. Step inputs can be generated using the `generate_step_tool`.  
+    - `output` lists only the desired output variables to record. Not all FMU outputs must be returned.  
+    - `output_interval` controls the sampling rate of recorded outputs.
+
+    **Rules:**  
+    - Always provide a valid FMU name available to the simulation environment.  
+    - Ensure that `start_values` contain all paramteters required by the FMU.  
     """
+
     FMU_DIR = DEFAULT_FMU_DIR
     if sim.start_values is None:
         sim.start_values = {}
@@ -216,6 +237,34 @@ def merge_signals_tool(signals: List[DataModel]) -> DataModel:
     return merge_signals(signals)
 '''
 
+
+def find_peaks_tool(signal_name: str, data: DataModel, props: FindPeaksProps) -> FindPeaksResult:
+    """
+    Find peaks inside a signal based on peak properties.
+
+    This function takes DataModel and finds all local maxima by simple comparison of neighboring values.
+    Optionally, a subset of these peaks can be selected by specifying conditions for a peak's properties.
+    """
+    t = np.asarray(data.timestamps, dtype=float)
+    for s in data.signals:
+        if s.name == signal_name:
+            x = np.asarray(s.values, dtype=float)
+            break
+    else:
+        raise ValueError(f"Signal {signal_name} not found in DataModel")
+
+    peaks, properties = find_peaks(x, height=props.height, threshold=props.threshold, distance=props.distance, prominence=props.prominence, width=props.width, wlen=props.wlen, rel_height=props.rel_height, plateau_size=props.plateau_size)
+    
+    peak_timestamps = [t[p] for p in peaks]
+    if len(peak_timestamps) >= 2:
+        average_peak_period = float(np.mean(np.diff(peak_timestamps)))
+    else:
+        # If less than 2 peaks, set period to NaN or 0
+        average_peak_period = float("nan")
+
+    return FindPeaksResult(peaks=[Peak(timestamp=t[p], value=x[p]) for p in peaks], average_peak_period=average_peak_period, properties=properties)
+
+
 def analyse_step_response(
     signal_name: str,
     data: DataModel,
@@ -230,7 +279,28 @@ def analyse_step_response(
         props: AnalysisProps containing the analysis properties
 
     Returns:
-        StepResponseAnalysis: Step response analysis
+        StepResponseAnalysis: Step response analysis which containt **critical points* and **metrics** useful for finetuning controller performance.
+            - p0 = (t0,y0) point when output starts to change from initial value.
+            - p10 = (t10,y10) point when output first reachest 10% of total change.
+            - p63 = (t63,y63) point when output first reachest 63% of total change. Can be used to determine the time constant T of a FOPDT system.
+            - p90 = (t90,y90) point when output first reachest 90% of total change.
+            - p98 = (t98,y98) point when output first reachest 98% of total change.
+            - pRT0 = (tRT0,yRT0) point when output first reachest RT(0) of total change.
+            - pRT1 = (tRT1,yRT1) point when output first reachest RT(1) of total change.
+            - pST = (tST,yST) point when output first reachest ST of total change.
+            - pPeak = (tPeak,yPeak) point when output first reachest Peak of total change.
+            - pUndershoot = (tUndershoot,yUndershoot) point when output first reachest Undershoot of total change.
+        - Rise time: time it takes for the response to rise from 10% to 90% of the final value. **This is useful when evaluating of finetuning controller performance.**
+        - Settling time: time it takes for the response to settle within 2% of the final value. **This is useful when evaluating of finetuning controller performance.**
+        - Settling min: minimum response value observed while evaluating settling behavior. **This is useful when evaluating of finetuning controller performance.**
+        - Settling max: maximum response value observed while evaluating settling behavior. **This is useful when evaluating of finetuning controller performance.**
+        - Overshoot: percentage of the final value that the response exceeds. **This is useful when evaluating of finetuning controller performance.**
+        - Undershoot: percentage of the final value that the response undershoots. **This is useful when evaluating of finetuning controller performance.**
+
+    Usage: 
+    - Use this tool whenever analysing step response data.
+    - Use this tool to get controll metrics whenever possible.
+        
     """
     t = np.asarray(data.timestamps, dtype=float)
     for s in data.signals:
@@ -371,6 +441,9 @@ def analyse_step_response(
         y_safe = y_val if y_val is not None else get_value(t_val)
         return (t_safe, y_safe)
 
+    # find peaks
+    peaks_result = find_peaks_tool(signal_name=signal_name, data=data, props=FindPeaksProps(signal_name=signal_name))
+
     return StepResponseAnalysis(
         characteristic_points=CharacteristicPoints(
             p0=cp(t_initial, y_start),
@@ -385,4 +458,99 @@ def analyse_step_response(
         settling_max=settling_max,
         overshoot=overshoot,
         undershoot=undershoot,
+        peaks=peaks_result.peaks,
     )
+
+def zn_pid_tuning(props: UltimateTuningProps) -> PIDParameters:
+    """
+    Compute PID controller parameters using the Ziegler-Nichols closed-loop
+    (also called ultimate gain or continuous-cycling) tuning method.
+
+    This function implements the standard Ziegler-Nichols closed-loop tuning rules.
+    It uses the experimentally determined **ultimate gain (Ku)** and **ultimate period (Pu)**
+    obtained from a continuous-cycling test (sustained oscillation test).
+    
+    The function supports several controller configurations (P, PI, PD, PID)
+    and tuning rule variants ("classic", "some_overshoot", "no_overshoot").
+
+    ---
+    ### Usage logic
+    - For controllers `p`, `pi`, or `pd`, only the `"classic"` method is valid.
+    - For `pid` controllers, all three methods are supported.
+    - Any other `(controller, method)` combination raises a `ValueError`.
+
+    ---
+    ### Args:
+        props (UltimateTuningProps):
+            A model specifying:
+              - `params.Ku` (float): the ultimate gain determined experimentally.
+              - `params.Pu` (float): the oscillation period at the ultimate gain.
+              - `controller` (Literal["p", "pi", "pd", "pid"]): the controller type.
+              - `method` (Literal["classic", "some_overshoot", "no_overshoot"]):
+                the tuning variant to apply. Defaults to `"classic"`.
+
+    ---
+    ### Returns:
+        PIDParameters:
+            A data model containing:
+              - `Kp` (float): proportional gain.
+              - `Ti` (float): integral time constant (∞ if not applicable).
+              - `Td` (float): derivative time constant (0 if not applicable).
+
+    ---
+    ### Raises:
+        ValueError:
+            If the controller/method combination is unsupported or invalid.
+
+    ---
+    ### Example usage:
+    - Before using this method, perform a closed-loop tuning test with a P-only controller (set I = 0, D = 0).
+    - Gradually increase the proportional gain until the system exhibits sustained oscillations.
+    - The gain at this point is the ultimate gain (Ku).
+    - The oscillation period is the ultimate period (Pu).
+    - Pass these values to the function using an argument that complies with the UltimateTuningProps schema.
+    ```json
+    {
+        "params": {
+            "Ku": ...,
+            "Pu": ...
+        },
+        "controller": ...,
+        "method": ...
+    }
+    ```
+    """
+    Ku, Pu = props.params.Ku, props.params.Pu
+    ctrl, method = props.controller, props.method
+
+    match (ctrl, method):
+        # --- P controller ---
+        case ("p", "classic"):
+            return PIDParameters(Kp=0.5 * Ku)
+
+        # --- PI controller ---
+        case ("pi", "classic"):
+            return PIDParameters(Kp=0.45 * Ku, Ti=Pu / 1.2)
+
+        # --- PD controller ---
+        case ("pd", "classic"):
+            return PIDParameters(Kp=0.8 * Ku, Td=Pu / 8.0)
+
+        # --- PID controller: variants ---
+        case ("pid", "classic"):
+            return PIDParameters(Kp=0.6 * Ku, Ti=Pu / 2.0, Td=Pu / 8.0)
+
+        case ("pid", "some_overshoot"):
+            # Slightly less aggressive than classic Z–N
+            return PIDParameters(Kp=(1.0 / 3.0) * Ku, Ti=Pu / 2.0, Td=Pu / 3.0)
+
+        case ("pid", "no_overshoot"):
+            # Conservative, smooth response
+            return PIDParameters(Kp=0.20 * Ku, Ti=Pu / 2.0, Td=Pu / 3.0)
+            
+        #anything else
+        case _:
+            raise ValueError(
+                f"Unsupported controller/method combination: "
+                f"controller='{ctrl}', method='{method}'"
+            )
