@@ -26,4 +26,5 @@ package-dir = { "" = "src" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
+include = ["control_toolbox*", "mcp_fmi_ecc26*", "agent*"]
 

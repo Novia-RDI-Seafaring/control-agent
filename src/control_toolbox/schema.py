@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, model_validator
 from typing import Any, Optional, Dict, Union, List
-from datetime import datetime
+from datetime import datetime, timezone
 
 ########################################################
 # DATA SCHEMA
@@ -38,10 +38,6 @@ class Attribute(BaseModel):
     unit: Optional[str] = Field(default=None, description="Unit of the attribute")
     description: Optional[str] = Field(default=None, description="Description of the attribute")
 
-class AttributeGroup(BaseModel):
-    name: str = Field(..., description="Name of the attribute group")
-    attributes: List[Attribute] = Field(default_factory=list, description="List of attributes")
-
 ########################################################
 # FIGURE SCHEMA
 ########################################################
@@ -58,7 +54,7 @@ class FigureModel(BaseModel):
 
 class Source(BaseModel):
     created_at: datetime = Field(
-        default_factory=datetime.utcnow,
+        default_factory=lambda: datetime.now(timezone.utc),
         description="Timestamp of the creation of the response"
     )
     tool_name: str = Field(
@@ -69,19 +65,23 @@ class Source(BaseModel):
         default=None,
         description="ID of the run that generated the response"
     )
-    parameters: Optional[Dict[str, Any]] = Field(
+    arguments: Optional[Dict[str, Any]] = Field(
         default=None,
-        description="Parameters/arguments used for this run (if any)."
+        description="Arguments used for running this tool."
     )
 
 class ErrorModel(BaseModel):
     message: str = Field(..., description="Error message")
     traceback: Optional[str] = Field(default=None, description="Traceback of the error")
     
-class ToolResponse(BaseModel):
+class ResponseModel(BaseModel):
     source: Source = Field(..., description="Source of the tool and its arguments that generated the response")
     summary: Optional[str] = Field(default=None, description="Summary of the response")
     data: Optional[List[DataModel]] = Field(default=None, description="Data associated with the response")
-    attributes: Optional[List[AttributeGroup]] = Field(default=None, description="Attributes associated with the response")
+    attributes: Optional[List[Attribute]] = Field(default=None, description="Attributes associated with the response")
+    payload: Optional[Any] = Field(
+        default=None,
+        description="Any other object the tool needs toreturn"
+    )
     figure: Optional[FigureModel] = Field(default=None, description="Figures associated with the response")
     error: Optional[ErrorModel] = Field(default=None, description="Error message if the response is not successful")
