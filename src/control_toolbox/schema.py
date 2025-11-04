@@ -83,5 +83,5 @@ class ResponseModel(BaseModel):
         default=None,
         description="Any other object the tool needs toreturn"
     )
-    figure: Optional[FigureModel] = Field(default=None, description="Figures associated with the response")
+    figures: Optional[List[FigureModel]] = Field(default=None, description="Figures associated with the response")
     error: Optional[ErrorModel] = Field(default=None, description="Error message if the response is not successful")

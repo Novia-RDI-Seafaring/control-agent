@@ -3,7 +3,7 @@ from typing import Dict, List, Optional, Union
 from fmpy import simulate_fmu as fmpy_simulate_fmu
 from pydantic import BaseModel, Field
 from typing import Any
-from control_toolbox.schema import DataModel, ResponseModel, Source
+from control_toolbox.schema import DataModel, ResponseModel, Source, FigureModel
 from control_toolbox.tools.utils import data_model_to_ndarray, ndarray_to_data_model
 from control_toolbox.config import get_fmu_dir
 
@@ -46,11 +46,47 @@ class SimulationProps(BaseModel):
             "inputs from their default values."
         )
     )
+
+########################################################
+# PLOTTING
+########################################################
+import plotly.graph_objs as go
+
+def plotly_simulation(data: DataModel):
+    timestamps = data.timestamps
+    signals = data.signals
+
+    # Create a list to hold the individual figures
+    figures = []
+
+    for signal in signals:
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=timestamps,
+            y=signal.values,
+            mode='lines',
+            name=signal.name
+        ))
+        fig.update_layout(
+            title=f"Simulation Result - {signal.name}",
+            xaxis_title="Time (seconds)",
+            yaxis_title=f"{signal.name} Value",
+            template="plotly_white"
+        )
+        # Convert Plotly figure to FigureModel
+        figure_model = FigureModel(
+            spec=fig.to_dict(),
+            caption=f"Simulation result for {signal.name}"
+        )
+        figures.append(figure_model)
+
+    return figures
+
 ########################################################
 # TOOLS
 ########################################################
 
-def simulate_tool(fmu_name: str, sim_props: SimulationProps, FMU_DIR: Optional[Path] = None) -> DataModel:
+def simulate_tool(fmu_name: str, sim_props: SimulationProps, FMU_DIR: Optional[Path] = None, generate_plot: bool = True) -> DataModel:
     """
     ### Tool: simulate_fmu_model
 
@@ -130,5 +166,6 @@ def simulate_tool(fmu_name: str, sim_props: SimulationProps, FMU_DIR: Optional[P
             tool_name="simulate_fmu",
             arguments={"sim_props": sim_props}
         ),
-        data=data_model
+        data=data_model,
+        figures=plotly_simulation(data_model) if generate_plot else None
     )

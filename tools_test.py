@@ -1,7 +1,5 @@
 from control_toolbox.tools.information import get_fmu_names, get_model_description, get_all_model_descriptions
 from control_toolbox.tools.simulation import simulate_tool, SimulationProps
-from control_toolbox.config import set_fmu_dir
-from pathlib import Path
 
 ########################################################
 # INFORMATION TOOLS
@@ -38,7 +36,7 @@ simulation_props = SimulationProps(
     output_interval=0.1
 )
 # simulate
-simulation_results = simulate_tool(simulation_props.fmu_name, simulation_props)
+simulation_results = simulate_tool(simulation_props.fmu_name, simulation_props, generate_plot=True)
 print(80*"=")
 print("Simulated Data:")
 print(simulation_results.model_dump_json(indent=2))
