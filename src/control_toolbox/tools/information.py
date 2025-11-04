@@ -1,11 +1,9 @@
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 from fmpy import read_model_description
 from pydantic import BaseModel
 from control_toolbox.schema import ResponseModel, Source
-
-# Default FMU directory path
-DEFAULT_FMU_DIR = (Path(__file__).parents[3] / "models" / "fmus").resolve()
+from control_toolbox.config import get_fmu_dir
 
 ########################################################
 # SCHEMAS
@@ -104,11 +102,13 @@ def _get_fmu_information(fmu_path: str) -> FMUInfo:
 ########################################################
 # TOOLS
 ########################################################
-def get_fmu_names(fmu_dir: Path) -> List[str]:
+def get_fmu_names(fmu_dir: Optional[Path] = None) -> List[str]:
     """Lists all FMU models in the directory.
     Returns:
     List[str]: List of model names (without .fmu extension)
     """
+    if fmu_dir is None:
+        fmu_dir = get_fmu_dir()
     names = [f.stem for f in fmu_dir.glob("*.fmu") if f.is_file()]
     return ResponseModel(
         source=Source(
@@ -118,11 +118,13 @@ def get_fmu_names(fmu_dir: Path) -> List[str]:
         payload=names
     )
 
-def get_model_description(FMU_DIR: Path, fmu_name: str) -> ResponseModel:
+def get_model_description(fmu_name: str, FMU_DIR: Optional[Path] = None) -> ResponseModel:
     """Gets the model description of an FMU model.
     Returns:
     FMUInfo: Full FMU information object
     """
+    if FMU_DIR is None:
+        FMU_DIR = get_fmu_dir()
     dir = str(FMU_DIR / f"{fmu_name}.fmu")
     information = _get_fmu_information(dir)
     return ResponseModel(
@@ -133,8 +135,10 @@ def get_model_description(FMU_DIR: Path, fmu_name: str) -> ResponseModel:
         payload=information
     )
 
-def get_all_model_descriptions(FMU_DIR: Path) -> ResponseModel:
+def get_all_model_descriptions(FMU_DIR: Optional[Path] = None) -> ResponseModel:
     """Lists all FMU models with full metadata, variables, and simulation defaults."""
+    if FMU_DIR is None:
+        FMU_DIR = get_fmu_dir()
     fmu_names = get_fmu_names(FMU_DIR)
     descriptions = []
     for name in fmu_names.payload:

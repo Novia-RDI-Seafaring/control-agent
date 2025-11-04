@@ -77,7 +77,7 @@ class ErrorModel(BaseModel):
 class ResponseModel(BaseModel):
     source: Source = Field(..., description="Source of the tool and its arguments that generated the response")
     summary: Optional[str] = Field(default=None, description="Summary of the response")
-    data: Optional[List[DataModel]] = Field(default=None, description="Data associated with the response")
+    data: Optional[Union[DataModel, List[DataModel]]] = Field(default=None, description="Data associated with the response")
     attributes: Optional[List[Attribute]] = Field(default=None, description="Attributes associated with the response")
     payload: Optional[Any] = Field(
         default=None,
