@@ -6,21 +6,21 @@ from pathlib import Path
 ########################################################
 # INFORMATION TOOLS
 ########################################################
-# get model names (no need to pass FMU_DIR, uses config)
+# get model names
 model_names = get_fmu_names()
 print(80*"=")
 print("Model Names:")
 print(model_names.model_dump_json(indent=2))
 print(80*"=")
 
-# get model description (function signature changed: fmu_name first)
+# get model description
 model_description = get_model_description(model_names.payload[0])
 print(80*"=")
 print("Model Description:")
 print(model_description.model_dump_json(indent=2))
 print(80*"=")
 
-# get all model descriptions (no need to pass FMU_DIR)
+# get all model descriptions
 all_model_descriptions = get_all_model_descriptions()
 print(80*"=")
 print("All Model Descriptions:")
@@ -37,9 +37,7 @@ simulation_props = SimulationProps(
     stop_time=10.0,
     output_interval=0.1
 )
-
-# Run simulation (function name is simulate_tool, not simulate_fmu)
-# Note: fmu_name is passed separately and also in sim_props
+# simulate
 simulation_results = simulate_tool(simulation_props.fmu_name, simulation_props)
 print(80*"=")
 print("Simulated Data:")
