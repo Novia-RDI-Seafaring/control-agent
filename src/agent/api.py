@@ -2,9 +2,7 @@
 
 from typing import Dict, Any, List, Optional
 from agent.core import create_agent
-
-
-    
+import logfire
 
 class FMIAgent:
     """High-level Python API for FMI Agent."""
@@ -33,6 +31,10 @@ class FMIAgent:
         self.max_iterations = max_iterations
         self.verbose = verbose
 
+        self.logger = logfire.get_logger("agent-fmi")
+        self.logger.info("Initializing Agent")
+
+
     def run(
         self,
         query: str,
@@ -53,6 +55,8 @@ class FMIAgent:
                 - prompts: prompts sent to the LLM
                 - first_llm_msg: first LLM output before tools
         """
+        self.logger.info(f"Agent received query: {query}", query=query)
+
         try:
             #trace_collector = TraceCollector()
             # Run agent using LangChain 1.0 API
@@ -116,9 +120,13 @@ class FMIAgent:
                 # "first_llm_msg": trace_collector.first_llm_msg,
             }
 
+            # logfire logging
+            self.logger.success(f"Agent run successful: {output[:200]}", result_summary=output[:200])
+
             return agent_result
 
         except Exception as e:
+            self.logger.exception(f"Agent run failed with error: {str(e)}", error=str(e))
             return {
                 "output": f"Error: {str(e)}",
                 "intermediate_steps": [],

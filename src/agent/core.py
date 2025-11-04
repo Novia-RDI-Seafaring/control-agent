@@ -1,10 +1,10 @@
 import os
-from typing import List, Optional, Dict, Any, Union, Optional
+from typing import List, Optional, Union
 from dotenv import load_dotenv
 
 from openai import AsyncClient
-from pydantic_ai import Agent, RunContext, AgentRunResultEvent, AgentStreamEvent, agent, Tool
 from pydantic_ai.models.openai import OpenAIChatModel, Model
+from pydantic_ai import Agent, Tool
 from pydantic_ai.providers.azure import AzureProvider
 from httpx import AsyncClient
 
@@ -14,10 +14,10 @@ from agent.tools.fmi_tools import (
     get_model_description,
     get_fmu_names,
     simulate_tool,
-    create_signal_tool,
-    merge_signals_tool,
+    generate_step_tool,
+    analyse_step_response,
+    zn_pid_tuning
 )
-
 # Load environment variables
 load_dotenv()
 
@@ -42,14 +42,27 @@ def get_tools() -> List[Tool]:
             name="simulate_fmu",  # expose the desired tool name
             description=simulate_tool.__doc__,
             takes_ctx=False),
-        Tool(create_signal_tool,
-            name="create_signal",
-            description=create_signal_tool.__doc__,
+        Tool(generate_step_tool,
+            name="generate_step",
+            description=generate_step_tool.__doc__,
             takes_ctx=False),
-        Tool(merge_signals_tool,
-            name="merge_signals",
-            description=merge_signals_tool.__doc__,
+        Tool(analyse_step_response,
+            name="analyse_step_response",
+            description=analyse_step_response.__doc__,
+            max_retries=3, 
             takes_ctx=False),
+        Tool(zn_pid_tuning,
+            name="zn_pid_tuning",
+            description=zn_pid_tuning.__doc__,
+            takes_ctx=False),
+        #Tool(create_signal_tool,
+        #    name="create_signal",
+        #    description=create_signal_tool.__doc__,
+        #    takes_ctx=False),
+        #Tool(merge_signals_tool,
+        #    name="merge_signals",
+        #    description=merge_signals_tool.__doc__,
+        #    takes_ctx=False),
     ]
 
 def get_azure_model(name: str) -> OpenAIChatModel:
@@ -97,6 +110,6 @@ def create_agent(
     return Agent(
         model=model,
         instructions=SYS_PROMPT,
-        name=agent_name,
         tools=tools,
+        retries=max_iterations
     )
