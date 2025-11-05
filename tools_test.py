@@ -5,7 +5,9 @@ from control_toolbox.tools.timeseries import (
     generate_step,
     StepProps, TimeRange,
     generate_impulse,
-    ImpulseProps,
+    ImpulseProps
+    )
+from control_toolbox.tools.analysis import (
     find_characteristic_points,
     find_peaks,
     FindPeaksProps
