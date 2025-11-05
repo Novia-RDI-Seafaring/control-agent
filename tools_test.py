@@ -1,7 +1,7 @@
 from operator import truediv
 from control_toolbox.tools.information import get_fmu_names, get_model_description, get_all_model_descriptions
 from control_toolbox.tools.simulation import simulate, simulate_step_response, SimulationProps
-from control_toolbox.tools.timeseries import generate_step, StepProps, TimeRange
+from control_toolbox.tools.timeseries import generate_step, StepProps, TimeRange, generate_impulse, ImpulseProps
 
 ########################################################
 # INFORMATION TOOLS
@@ -41,6 +41,18 @@ print(80*"=")
 print("Step Results:")
 print(step_results.model_dump_json(indent=2))
 print(80*"=")
+
+# impulse
+impulse_props = ImpulseProps(
+    signal_name="input",
+    time_range=TimeRange(start=0.0, stop=2.0, sampling_time=0.4),
+    impulse_time=0.4,
+    magnitude=1.0
+)
+impulse_results = generate_impulse(impulse_props)
+print(80*"=")
+print("Impulse Results:")
+print(impulse_results.model_dump_json(indent=2))
 
 ########################################################
 # SIMULATION TOOLS

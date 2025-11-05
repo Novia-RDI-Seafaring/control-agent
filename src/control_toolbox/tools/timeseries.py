@@ -39,6 +39,34 @@ class StepProps(BaseModel):
             raise ValueError("step_time must be within [start, stop]")
         return self
 
+class ImpulseProps(BaseModel):
+    """
+    Properties for generating a discrete-time impulse (Dirac delta) signal.
+    """
+    signal_name: str = Field(
+        default="input",
+        description="Name of the signal carrying the impulse."
+    )
+    time_range: TimeRange = Field(
+        default_factory=lambda: TimeRange(start=0.0, stop=1.0, sampling_time=0.1),
+        description="Time range over which the impulse signal is defined."
+    )
+    impulse_time: float = Field(
+        default=0.1,
+        description="Time at which the unit impulse occurs (must fall within the time range)."
+    )
+    magnitude: float = Field(
+        default=1.0,
+        description="Amplitude of the impulse (default 1.0 for unit impulse)."
+    )
+
+    @model_validator(mode="after")
+    def _check_impulse_time(self):
+        tr = self.time_range
+        if not (tr.start <= self.impulse_time <= tr.stop):
+            raise ValueError("impulse_time must be within [start, stop]")
+        return self
+
 ########################################################
 # TOOLS
 ########################################################
@@ -93,50 +121,33 @@ def generate_step(step: StepProps) -> ResponseModel:
         data=data
     )
 
-def generate_step_tool(step: StepProps) -> ResponseModel:
+def generate_impulse(impulse: ImpulseProps) -> ResponseModel:
     """
-    Generates a step signal.
+    Generates a unit impulse signal.
     
     Args:
-        step: StepProps containing the step signal properties
+        impulse: ImpulseProps containing the impulse signal properties
         
     Returns:
-        DataModel: Step signal
+        DataModel: Impulse signal
 
-    Usage: 
-    - Make sure thaht the step signal is generated with the correct signal name when passed to other tools as input.
-    - Make sure the lists of timestamps and values are the same length
-    - Make sure the timestamps are in ascending order
-    - Keep the timestamp and value lists as short as possible. It is enough to define the singal only at timestamps where change happens.
-
-    Example: Generate a step at t=1 seconds on the time interval [0, 10.0] seconds.
-    ```json
-    {
-        "signal_name": "input",
-        "time_range": {
-            "start": 0.0,
-            "stop": 10.0,
-            "sampling_time": 0.1
-        },
-        "step_time": 1.0,
-        "initial_value": 0.0,
-        "final_value": 1.0
-    }
-    ```
-
+    Example: Generate a unit impulse at t=1 seconds on the time interval [0, 10.0] seconds.
     """
-    start = step.time_range.start
-    stop = step.time_range.stop
-    dt = step.time_range.sampling_time
+    start = impulse.time_range.start
+    stop = impulse.time_range.stop
+    dt = impulse.time_range.sampling_time
 
     # number of samples in interval
-    dt = step.time_range.sampling_time
-    timestamps = np.array([start, step.step_time - dt, step.step_time, step.step_time + dt, stop])
-    values = np.array([step.initial_value, step.initial_value, step.final_value, step.final_value, step.final_value])
+    dt = impulse.time_range.sampling_time
+    timestamps = np.arange(start, stop + dt, dt)
+    values = np.zeros_like(timestamps)
+    # index of impulse
+    idx = np.argmin(np.abs(timestamps - impulse.impulse_time))
+    values[idx] = impulse.magnitude
 
     data = DataModel(
         timestamps=timestamps,
-        signals=[Signal(name=step.signal_name, values=values.tolist())]
+        signals=[Signal(name=impulse.signal_name, values=values.tolist())]
         )
     return ResponseModel(
         source=Source(tool_name="generate_step_tool"),
