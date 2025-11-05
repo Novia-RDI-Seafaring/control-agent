@@ -10,7 +10,9 @@ from control_toolbox.tools.timeseries import (
 from control_toolbox.tools.analysis import (
     find_characteristic_points,
     find_peaks,
-    FindPeaksProps
+    FindPeaksProps,
+    SettlingTimeProps,
+    find_settling_time
     )
 
 ########################################################
@@ -75,8 +77,8 @@ simulation_props = SimulationProps(
         output_interval=0.1,
         start_values={
             "mode": True,
-            "Kp": 1.7,
-            "Ti": 0.8,
+            "Kp": 1.0,
+            "Ti": 1.0,
         }
     )
 
@@ -89,15 +91,15 @@ print(step_response.model_dump_json(indent=2))
 print(80*"=")
 
 # simulate impulse response
-impulse_response = simulate_impulse_response(sim_props=simulation_props, impulse_props=impulse_props)
+# impulse_response = simulate_impulse_response(sim_props=simulation_props, impulse_props=impulse_props)
 
-print(80*"=")
-print("Simulated Impulse Response:")
-print(impulse_response.model_dump_json(indent=2))
-print(80*"=")
+# print(80*"=")
+# print("Simulated Impulse Response:")
+# print(impulse_response.model_dump_json(indent=2))
+# print(80*"=")
 
 ########################################################
-# TIMESERIES TOOLS
+# ANALYSIS TOOLS
 ########################################################
 peak_props = FindPeaksProps()
 
@@ -112,4 +114,13 @@ print(80*"=")
 print("Peaks:")
 print(peaks.model_dump_json(indent=2))
 print(80*"=")
+
+settling_time_props = SettlingTimeProps(tolerance=0.02)
+
+settling_time = find_settling_time(step_response.data, props=settling_time_props)
+print(80*"=")
+print("Settling Time:")
+print(settling_time.model_dump_json(indent=2))
+print(80*"=")
+
 

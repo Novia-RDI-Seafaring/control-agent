@@ -13,6 +13,7 @@ class Point(BaseModel):
     """
     timestamp: float = Field(..., description="Timestamp of the data point.")
     value: float = Field(..., description="Value of the data point.")
+    description: Optional[str] = Field(default=None, description="Description of the data point.")
 
 class CharacteristicPoint(BaseModel):
     """
@@ -274,3 +275,69 @@ def find_peaks(data: DataModel, props: FindPeaksProps) -> ResponseModel:
         source=Source(tool_name="find_peaks_tool"),
         attributes=[peaks_attribute_group]
     )
+
+class SettlingTimeProps(BaseModel):
+    """
+    Properties for finding steady state time point of a signal.
+    """
+    tolerance: float = Field(default=0.02, description="Tolerance for the steady state time point stays within a threshold (percentage) of steady-state value.")
+
+class SettlingTime(BaseModel):
+    signal_name: str = Field(..., description="Name of the signal.")
+    settling_time: float = Field(..., description="Settling time of the signal.")
+
+def find_settling_time(data: DataModel, props: SettlingTimeProps) -> ResponseModel:
+    """
+    Finds the settling time of each signal in the data. The settling time is defined as the
+    first time point where the signal remains within a specified tolerance (percentage) of
+    its final value (i.e., steady-state level) for the remainder of the signal.
+    """
+    t = np.asarray(data.timestamps, dtype=float)
+    if t.size == 0:
+        raise ValueError("No timestamps in data")
+
+    tol = props.tolerance
+    settling_attributes = []
+
+    for idx, s in enumerate(data.signals):
+        x = np.asarray(s.values, dtype=float)
+        steady_state = x[-1]
+
+        # bounds for settling region
+        ub = steady_state * (1 + tol)
+        lb = steady_state * (1 - tol)
+
+        # find point where signal stays within bounds
+        within_band = (x >= lb) & (x <= ub)
+
+        settling_time = float("nan")
+        settling_value = float("nan")
+
+        for i in range(len(within_band)):
+            if within_band[i:].all():
+                settling_time = float(t[i])
+                settling_value = float(x[i])
+                break
+
+        # Add result as an Attribute entry
+        settling_attributes.append(
+            SettlingTime(
+                signal_name=s.name,
+                settling_time=settling_time
+            )
+        )
+
+    # All done — now return a full response
+    return ResponseModel(
+        source=Source(tool_name="find_settling_time_tool", arguments=props.model_dump()),
+        attributes=[
+            AttributesGroup(
+                title="Settling time results",
+                attributes=settling_attributes,
+                description="Settling times for each signal based on tolerance band."
+            )
+        ]
+    )
+        
+
+
