@@ -7,7 +7,7 @@ from typing import Any
 from control_toolbox.schema import DataModel, ResponseModel, Source, FigureModel
 from control_toolbox.tools.utils import data_model_to_ndarray, ndarray_to_data_model
 from control_toolbox.config import get_fmu_dir
-from control_toolbox.tools.timeseries import generate_step, StepProps
+from control_toolbox.tools.timeseries import generate_step, StepProps, generate_impulse, ImpulseProps
 
 ########################################################
 # SCHEMAS
@@ -187,13 +187,35 @@ def simulate_step_response(sim_props: SimulationProps, step_props: StepProps, FM
     # generate inputs
     sim_props.input = generate_step(step_props).data
     result = simulate(sim_props, FMU_DIR, generate_plot)
-    result.source.tool_name = "simulate_step_response"
-    result.source.arguments["step_props"] = step_props
-
+    
     return ResponseModel(
         source=Source(
             tool_name="simulate_step_response",
             arguments={"sim_props": sim_props, "step_props": step_props}
+        ),
+        data=result.data,
+        figures=result.figures
+    )
+
+def simulate_impulse_response(sim_props: SimulationProps, impulse_props: ImpulseProps, FMU_DIR: Optional[Path] = None, generate_plot: bool = False) -> DataModel:
+    """
+    ### Tool: simulate_fmu_step
+
+    Args:
+        sim_props: SimulationProps containing the simulation parameters
+        impulse_props: ImpulseProps containing the impulse signal properties at time 'impulse_time' with magnutude 'magnitude'
+        
+    Returns:
+        DataModel: simulation results
+    """
+    # generate inputs
+    sim_props.input = generate_impulse(impulse_props).data
+    result = simulate(sim_props, FMU_DIR, generate_plot)
+
+    return ResponseModel(
+        source=Source(
+            tool_name="simulate_impulse_response",
+            arguments={"sim_props": sim_props, "impulse_props": impulse_props}
         ),
         data=result.data,
         figures=result.figures
