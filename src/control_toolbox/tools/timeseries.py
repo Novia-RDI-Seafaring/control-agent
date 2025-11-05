@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field, model_validator
 from control_toolbox.schema import ResponseModel, DataModel, Signal, Source
 from typing import List, Tuple
 import numpy as np
+from datetime import datetime, timezone
 
 ########################################################
 # SCHEMAS
@@ -304,6 +305,8 @@ def find_characteristic_points(data: DataModel) -> ResponseModel:
         characteristic_points.append(cps)
 
     return ResponseModel(
-        source=Source(tool_name="find_characteristic_points_tool"),
+        source=Source(
+            tool_name="find_characteristic_points_tool"
+            ),
         payload=characteristic_points
     )
