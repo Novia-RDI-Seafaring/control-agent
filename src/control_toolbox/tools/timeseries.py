@@ -1,5 +1,6 @@
+from plotly.graph_objs.pie import title
 from pydantic import BaseModel, Field, model_validator
-from control_toolbox.schema import ResponseModel, DataModel, Signal, Source
+from control_toolbox.schema import ResponseModel, DataModel, Signal, Source, AttributesGroup
 from typing import List, Tuple, Optional, Dict
 import numpy as np
 from datetime import datetime, timezone
@@ -151,20 +152,12 @@ class FindPeaksProps(BaseModel):
         )
     )
 
-class FindPeaksResult(BaseModel):
+class PeakAttributes(BaseModel):
     signal_name: str = Field(..., description="Name of the signal.")
-    peaks: List[Point] = Field(
-        ...,
-        description="List of peaks (timestamps and values) in signal that satisfy all given conditions."
-    )
-    average_peak_period: float = Field(
-        ...,
-        description="Average period of the peaks"
-    )
-    properties: Dict[str, float] = Field(
-        ...,
-        description="Properties of the peaks"
-    )
+    timestamps: List[float] = Field(..., description="List of timestamps in the signal.")
+    peak_values: List[float] = Field(..., description="List of values in the signal.")
+    average_peak_period: float = Field(..., description="Average period of the peaks")
+    properties: Dict[str, float] = Field(..., description="Properties of the peaks")
 
 
 ########################################################
@@ -387,7 +380,7 @@ def find_characteristic_points(data: DataModel) -> ResponseModel:
         payload=characteristic_points
     )
 
-def find_peaks(data: DataModel, props: FindPeaksProps) -> FindPeaksResult:
+def find_peaks(data: DataModel, props: FindPeaksProps) -> ResponseModel:
     """
     Find peaks inside a signal based on peak properties.
 
@@ -395,26 +388,39 @@ def find_peaks(data: DataModel, props: FindPeaksProps) -> FindPeaksResult:
     Optionally, a subset of these peaks can be selected by specifying conditions for a peak's properties.
     """
     t = np.asarray(data.timestamps, dtype=float)
-    peaks_results = []
+
+    peak_attributes = []
     for signal in data.signals:
         x = np.asarray(signal.values, dtype=float)
         peaks, properties = scipy_find_peaks(x, height=props.height, threshold=props.threshold, distance=props.distance, prominence=props.prominence, width=props.width, wlen=props.wlen, rel_height=props.rel_height, plateau_size=props.plateau_size)
     
         peak_timestamps = [t[p] for p in peaks]
+        peak_values = [x[p] for p in peaks]
+
         if len(peak_timestamps) >= 2:
             average_peak_period = float(np.mean(np.diff(peak_timestamps)))
         else:
             # If less than 2 peaks, set period to NaN or 0
             average_peak_period = float("nan")
-        peaks_results.append(
-            FindPeaksResult(
-                signal_name=signal.name,
-                peaks=[Point(timestamp=t[p], value=x[p]) for p in peaks],
-                average_peak_period=average_peak_period,
-                properties=properties)
-        )
+        
+        peak_attributes.append(PeakAttributes(
+            signal_name=signal.name,
+            timestamps=peak_timestamps,
+            peak_values=peak_values,
+            average_peak_period=average_peak_period,
+            properties=properties
+        ))
+        
 
+
+    # collect results in attribute groups
+    peaks_attribute_group = AttributesGroup(
+        title="Peak-detection results",
+        attributes=peak_attributes,
+        description=f"Detected peaks in all signals"
+    )
+                
     return ResponseModel(
         source=Source(tool_name="find_peaks_tool"),
-        payload=peaks_results
+        attributes=[peaks_attribute_group]
     )

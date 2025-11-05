@@ -73,6 +73,8 @@ simulation_props = SimulationProps(
         output_interval=0.1,
         start_values={
             "mode": True,
+            "Kp": 1.7,
+            "Ti": 0.8,
         }
     )
 
