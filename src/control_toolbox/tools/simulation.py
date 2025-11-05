@@ -7,7 +7,7 @@ from typing import Any
 from control_toolbox.schema import DataModel, ResponseModel, Source, FigureModel
 from control_toolbox.tools.utils import data_model_to_ndarray, ndarray_to_data_model
 from control_toolbox.config import get_fmu_dir
-from control_toolbox.tools.timeseries import generate_step_tool, StepProps
+from control_toolbox.tools.timeseries import generate_step, StepProps
 
 ########################################################
 # SCHEMAS
@@ -165,7 +165,7 @@ def simulate(sim_props: SimulationProps, FMU_DIR: Optional[Path] = None, generat
     
     return ResponseModel(
         source=Source(
-            tool_name="simulate_fmu",
+            tool_name="simulate",
             arguments={"sim_props": sim_props}
         ),
         data=data_model,
@@ -185,7 +185,17 @@ def simulate_step_response(sim_props: SimulationProps, step_props: StepProps, FM
         DataModel: simulation results
     """
     # generate inputs
-    sim_props.input = generate_step_tool(step_props).data
+    sim_props.input = generate_step(step_props).data
+    result = simulate(sim_props, FMU_DIR, generate_plot)
+    result.source.tool_name = "simulate_step_response"
+    result.source.arguments["step_props"] = step_props
 
-    return simulate_fmu(sim_props, FMU_DIR, generate_plot)
+    return ResponseModel(
+        source=Source(
+            tool_name="simulate_step_response",
+            arguments={"sim_props": sim_props, "step_props": step_props}
+        ),
+        data=result.data,
+        figures=result.figures
+    )
 
