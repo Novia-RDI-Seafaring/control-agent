@@ -1,8 +1,9 @@
 from pydantic import BaseModel, Field, model_validator
 from control_toolbox.schema import ResponseModel, DataModel, Signal, Source
-from typing import List, Tuple
+from typing import List, Tuple, Optional, Dict
 import numpy as np
 from datetime import datetime, timezone
+from scipy.signal import find_peaks as scipy_find_peaks
 
 ########################################################
 # SCHEMAS
@@ -68,6 +69,103 @@ class ImpulseProps(BaseModel):
         if not (tr.start <= self.impulse_time <= tr.stop):
             raise ValueError("impulse_time must be within [start, stop]")
         return self
+
+class Point(BaseModel):
+    """
+    Characteristic point.
+    """
+    timestamp: float = Field(..., description="Timestamp of the characteristic point.")
+    value: float = Field(..., description="Value of the characteristic point.")
+
+class CharacteristicPoint(BaseModel):
+    """
+    Characteristic point.
+    """
+    name: str = Field(..., description="Name of the characteristic point.")
+    description: str = Field(..., description="Description of the characteristic point.")
+    point: Point = Field(..., description="Points of the characteristic point.")
+
+class CharacteristicPoints(BaseModel):
+    """
+    Characteristic points of a step response.
+    """
+    signal_name: str = Field(..., description="Name of the signal.")
+    characteristic_points: List[CharacteristicPoint] = Field(..., description="Points of the characteristic point.")
+
+class FindPeaksProps(BaseModel):
+    height: Optional[float] = Field(
+        default=None,
+        description=(
+            "Required height of peaks. Either a number, None, an array matching x or a 2-element sequence of the former."
+            "The first element is always interpreted as the minimal and the second, if supplied, as the maximal required height."
+        )
+    )
+    threshold: Optional[float] = Field(
+        default=None,
+        description=(
+            "Required threshold of peaks, the vertical distance to its neighboring samples."
+            "Either a number, None, an array matching x or a 2-element sequence of the former."
+            "The first element is always interpreted as the minimal and the second, if supplied, as the maximal required threshold."
+        )
+    )
+    distance: Optional[float] = Field(
+        default=None,
+        description=(
+            "Required distance between peaks. The minimum distance between returned peaks. "
+            "Smaller peaks are removed first until the condition is fulfilled for all remaining peaks."
+        )
+    )
+    prominence: Optional[float] = Field(
+        default=None,
+        description=(
+            "Required prominence of peaks. Either a number, None, an array matching x or a 2-element sequence of the former."
+            "The first element is always interpreted as the minimal and the second, if supplied, as the maximal required prominence."
+        )
+    )
+    width: Optional[float] = Field(
+        default=None,
+        description=(
+            "Required width of peaks in samples. Either a number, None, an array matching x or a 2-element sequence of the former."
+            "The first element is always interpreted as the minimal and the second, if supplied, as the maximal required width"
+        )
+    )
+    wlen: Optional[int] = Field(
+        default=None,
+        description=(
+            "Used for calculation of the peaks prominences, thus it is only used if one of the arguments prominence or width is given."
+            "See argument wlen in peak_prominences for a full description of its effects."
+        )
+    )
+    rel_height: Optional[float] = Field(
+        default=0.5,
+        description=(
+            "Used for calculation of the peaks width, thus it is only used if width is given."
+            "See argument rel_height in peak_widths for a full description of its effects."
+        )
+    )
+    plateau_size: Optional[int] = Field(
+        default=None,
+        description=(
+            "Required size of the flat top of peaks in samples. Either a number, None, an array matching x or a 2-element sequence of the former."
+            "The first element is always interpreted as the minimal and the second, if supplied, as the maximal required plateau size."
+        )
+    )
+
+class FindPeaksResult(BaseModel):
+    signal_name: str = Field(..., description="Name of the signal.")
+    peaks: List[Point] = Field(
+        ...,
+        description="List of peaks (timestamps and values) in signal that satisfy all given conditions."
+    )
+    average_peak_period: float = Field(
+        ...,
+        description="Average period of the peaks"
+    )
+    properties: Dict[str, float] = Field(
+        ...,
+        description="Properties of the peaks"
+    )
+
 
 ########################################################
 # HELPER FUNCTIONS
@@ -220,28 +318,6 @@ def generate_impulse(impulse: ImpulseProps) -> ResponseModel:
         data=data
     )
 
-class Point(BaseModel):
-    """
-    Characteristic point.
-    """
-    timestamp: float = Field(..., description="Timestamp of the characteristic point.")
-    value: float = Field(..., description="Value of the characteristic point.")
-
-class CharacteristicPoint(BaseModel):
-    """
-    Characteristic point.
-    """
-    name: str = Field(..., description="Name of the characteristic point.")
-    description: str = Field(..., description="Description of the characteristic point.")
-    point: Point = Field(..., description="Points of the characteristic point.")
-
-class CharacteristicPoints(BaseModel):
-    """
-    Characteristic points of a step response.
-    """
-    signal_name: str = Field(..., description="Name of the signal.")
-    characteristic_points: List[CharacteristicPoint] = Field(..., description="Points of the characteristic point.")
-
 def find_characteristic_points(data: DataModel) -> ResponseModel:
     """
     Finds the characteristic points of step responses.
@@ -309,4 +385,36 @@ def find_characteristic_points(data: DataModel) -> ResponseModel:
             tool_name="find_characteristic_points_tool"
             ),
         payload=characteristic_points
+    )
+
+def find_peaks(data: DataModel, props: FindPeaksProps) -> FindPeaksResult:
+    """
+    Find peaks inside a signal based on peak properties.
+
+    This function takes DataModel and finds all local maxima by simple comparison of neighboring values.
+    Optionally, a subset of these peaks can be selected by specifying conditions for a peak's properties.
+    """
+    t = np.asarray(data.timestamps, dtype=float)
+    peaks_results = []
+    for signal in data.signals:
+        x = np.asarray(signal.values, dtype=float)
+        peaks, properties = scipy_find_peaks(x, height=props.height, threshold=props.threshold, distance=props.distance, prominence=props.prominence, width=props.width, wlen=props.wlen, rel_height=props.rel_height, plateau_size=props.plateau_size)
+    
+        peak_timestamps = [t[p] for p in peaks]
+        if len(peak_timestamps) >= 2:
+            average_peak_period = float(np.mean(np.diff(peak_timestamps)))
+        else:
+            # If less than 2 peaks, set period to NaN or 0
+            average_peak_period = float("nan")
+        peaks_results.append(
+            FindPeaksResult(
+                signal_name=signal.name,
+                peaks=[Point(timestamp=t[p], value=x[p]) for p in peaks],
+                average_peak_period=average_peak_period,
+                properties=properties)
+        )
+
+    return ResponseModel(
+        source=Source(tool_name="find_peaks_tool"),
+        payload=peaks_results
     )

@@ -1,7 +1,15 @@
 from operator import truediv
 from control_toolbox.tools.information import get_fmu_names, get_model_description, get_all_model_descriptions
 from control_toolbox.tools.simulation import simulate, simulate_step_response, simulate_impulse_response, SimulationProps
-from control_toolbox.tools.timeseries import generate_step, StepProps, TimeRange, generate_impulse, ImpulseProps, find_characteristic_points
+from control_toolbox.tools.timeseries import (
+    generate_step,
+    StepProps, TimeRange,
+    generate_impulse,
+    ImpulseProps,
+    find_characteristic_points,
+    find_peaks,
+    FindPeaksProps
+    )
 
 ########################################################
 # INFORMATION TOOLS
@@ -64,7 +72,7 @@ simulation_props = SimulationProps(
         stop_time=30.0,
         output_interval=0.1,
         start_values={
-            "mode": False,
+            "mode": True,
         }
     )
 
@@ -87,9 +95,17 @@ print(80*"=")
 ########################################################
 # TIMESERIES TOOLS
 ########################################################
+peak_props = FindPeaksProps()
+
 characteristic_points = find_characteristic_points(step_response.data)
 print(80*"=")
 print("Characteristic Points:")
 print(characteristic_points.model_dump_json(indent=2))
+print(80*"=")
+
+peaks = find_peaks(data=step_response.data, props=peak_props)
+print(80*"=")
+print("Peaks:")
+print(peaks.model_dump_json(indent=2))
 print(80*"=")
 
