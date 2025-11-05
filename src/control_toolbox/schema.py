@@ -32,11 +32,10 @@ class DataModel(BaseModel):
                 )
         return self
 
-class Attribute(BaseModel):
-    name: str = Field(..., description="Name of the attribute")
-    value: Union[float, int, str] = Field(..., description="Value of the attribute")
-    unit: Optional[str] = Field(default=None, description="Unit of the attribute")
-    description: Optional[str] = Field(default=None, description="Description of the attribute")
+class AttributesGroup(BaseModel):
+    title: str = Field(..., description="Title/name of the attribute group")
+    attributes: List[Any] = Field(..., description="List of attributes")
+    description: Optional[str] = Field(default=None, description="Description of the attribute group")
 
 ########################################################
 # FIGURE SCHEMA
@@ -73,12 +72,12 @@ class Source(BaseModel):
 class ErrorModel(BaseModel):
     message: str = Field(..., description="Error message")
     traceback: Optional[str] = Field(default=None, description="Traceback of the error")
-    
+
 class ResponseModel(BaseModel):
     source: Source = Field(..., description="Source of the tool and its arguments that generated the response")
     summary: Optional[str] = Field(default=None, description="Summary of the response")
     data: Optional[Union[DataModel, List[DataModel]]] = Field(default=None, description="Data associated with the response")
-    attributes: Optional[List[Attribute]] = Field(default=None, description="Attributes associated with the response")
+    attributes: Optional[List[AttributesGroup]] = Field(default=None, description="Attributes associated with the response")
     payload: Optional[Any] = Field(
         default=None,
         description="Any other object the tool needs toreturn"
