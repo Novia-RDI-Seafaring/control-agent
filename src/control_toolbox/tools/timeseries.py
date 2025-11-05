@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field, model_validator
 from control_toolbox.schema import ResponseModel, DataModel, Signal, Source
+from typing import List, Tuple
 import numpy as np
 
 ########################################################
@@ -66,6 +67,70 @@ class ImpulseProps(BaseModel):
         if not (tr.start <= self.impulse_time <= tr.stop):
             raise ValueError("impulse_time must be within [start, stop]")
         return self
+
+########################################################
+# HELPER FUNCTIONS
+########################################################
+# Helper: get value at time (with interpolation)
+def _get_value(timestamps: List[float], values: List[float], t_val: float) -> float:
+    """
+    Returns the interpolated value at time `t_val` using linear interpolation.
+
+    - Uses numpy's `interp`, which handles interpolation and edge clipping.
+    - Returns NaN for invalid inputs (e.g. mismatched or empty lists).
+
+    Args:
+        timestamps: Sorted list of time points.
+        values: List of sample values corresponding to timestamps.
+        t_val: Query time.
+
+    Returns:
+        Interpolated value, or NaN if input is invalid.
+    """
+    return float(np.interp(
+        x=t_val,
+        xp=timestamps,
+        fp=values,
+        left=values[0],      # Clip to first value when t_val < timestamps[0]
+        right=values[-1]     # Clip to last value when t_val > timestamps[-1]
+    ))
+
+# Helper: first crossing of threshold
+def _first_cross(
+    timestamps: List[float],
+    values: List[float],
+    threshold: float,
+    is_upward: bool = True,
+    start_index: int = 0,
+) -> Tuple[float, float]:
+    """
+    Returns the first sample (t, y) after `start_index` where `values` crosses the given `threshold`.
+    No interpolation — directly returns the sample time and value.
+
+    Args:
+        timestamps: List of sample time points (same length as values).
+        values: List of corresponding signal values.
+        threshold: Threshold to detect.
+        is_upward: True for upward crossing (>=), False for downward crossing (<=).
+        start_index: Index to start the search from.
+
+    Returns:
+        (time, value) tuple at the first threshold crossing, or (nan, nan) if none.
+    """
+    t = np.asarray(timestamps)
+    y = np.asarray(values)
+    yinf = values[-1]
+
+    if is_upward:
+        idx = np.where(y[start_index:] >= threshold)[0]
+    else:
+        idx = np.where(y[start_index:] <= threshold)[0]
+
+    if idx.size > 0:
+        i = start_index + idx[0] - 1
+        return float(t[i]), float(y[i])
+    else:
+        return float("nan"), float("nan")
 
 ########################################################
 # TOOLS
@@ -152,4 +217,93 @@ def generate_impulse(impulse: ImpulseProps) -> ResponseModel:
     return ResponseModel(
         source=Source(tool_name="generate_step_tool"),
         data=data
+    )
+
+class Point(BaseModel):
+    """
+    Characteristic point.
+    """
+    timestamp: float = Field(..., description="Timestamp of the characteristic point.")
+    value: float = Field(..., description="Value of the characteristic point.")
+
+class CharacteristicPoint(BaseModel):
+    """
+    Characteristic point.
+    """
+    name: str = Field(..., description="Name of the characteristic point.")
+    description: str = Field(..., description="Description of the characteristic point.")
+    point: Point = Field(..., description="Points of the characteristic point.")
+
+class CharacteristicPoints(BaseModel):
+    """
+    Characteristic points of a step response.
+    """
+    signal_name: str = Field(..., description="Name of the signal.")
+    characteristic_points: List[CharacteristicPoint] = Field(..., description="Points of the characteristic point.")
+
+def find_characteristic_points(data: DataModel) -> ResponseModel:
+    """
+    Finds the characteristic points of step responses.
+    
+    Args:
+        data: DataModel containing the signal
+        
+    Returns:
+        ResponseModel: Contains **critical points* analyzing step rsponses and finetuning controllers.
+            - p0 = (t0,y0) point when output starts to change from initial value.
+            - p10 = (t10,y10) point when output first reachest 10% of total change.
+            - p63 = (t63,y63) point when output first reachest 63% of total change. Can be used to determine the time constant T of a FOPDT system.
+            - p90 = (t90,y90) point when output first reachest 90% of total change.
+            - p98 = (t98,y98) point when output first reachest 98% of total change.
+    """
+    # find the points where the signal changes
+    timestamps = data.timestamps
+
+    characteristic_points = []
+    for signal in data.signals:
+        values = signal.values
+
+        y_final = values[-1]
+        t_final = timestamps[-1]
+        
+        # find the points where the signal changes
+        t0, y0 = _first_cross(timestamps, values, 0.0)
+        cp0 = CharacteristicPoint(
+            name="p0",
+            description="Point when output first starts to change from initial value.",
+            point=Point(timestamp=t0, value=y0)
+        )
+        t10, y10 = _first_cross(timestamps, values, 0.1 * y_final)
+        cp10 = CharacteristicPoint(
+            name="p10",
+            description="Point when output first reachest 10% of total change. Used as lower reference point when determining the rise time of a system.",
+            point=Point(timestamp=t10, value=y10)
+        )
+        t63, y63 = _first_cross(timestamps, values, 0.63 * y_final)
+        cp63 = CharacteristicPoint(
+            name="p63",
+            description="Point when output first reachest 63% of total change. Can be used to determine the time constant T of a FOPDT system.",
+            point=Point(timestamp=t63, value=y63)
+        )
+        t90, y90 = _first_cross(timestamps, values, 0.90 * y_final)
+        cp90 = CharacteristicPoint(
+            name="p90",
+            description="Point when output first reachest 90% of total change. Used as upper reference point when determining the rise time of a system.",
+            point=Point(timestamp=t90, value=y90)
+        )
+        cp_final = CharacteristicPoint(
+            name="pinf",
+            description=f"Steady-state point of the step response as t to infty.",
+            point=Point(timestamp=t_final, value=y_final)
+        )
+
+        cps = CharacteristicPoints(
+            signal_name=signal.name,
+            characteristic_points=[cp0, cp10, cp63, cp90, cp_final]
+        )
+        characteristic_points.append(cps)
+
+    return ResponseModel(
+        source=Source(tool_name="find_characteristic_points_tool"),
+        payload=characteristic_points
     )

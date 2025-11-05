@@ -1,7 +1,7 @@
 from operator import truediv
 from control_toolbox.tools.information import get_fmu_names, get_model_description, get_all_model_descriptions
 from control_toolbox.tools.simulation import simulate, simulate_step_response, simulate_impulse_response, SimulationProps
-from control_toolbox.tools.timeseries import generate_step, StepProps, TimeRange, generate_impulse, ImpulseProps
+from control_toolbox.tools.timeseries import generate_step, StepProps, TimeRange, generate_impulse, ImpulseProps, find_characteristic_points
 
 ########################################################
 # INFORMATION TOOLS
@@ -31,8 +31,8 @@ print(80*"=")
 ########################################################
 step_props = StepProps(
     signal_name="input",
-    time_range=TimeRange(start=0.0, stop=2.0, sampling_time=0.4),
-    step_time=0.4,
+    time_range=TimeRange(start=0.0, stop=2.0, sampling_time=0.1),
+    step_time=1.0,
     initial_value=0.0,
     final_value=1.0
 )
@@ -68,33 +68,28 @@ simulation_props = SimulationProps(
         }
     )
 
-
-# simulate
-simulation_results = simulate(sim_props=simulation_props, generate_plot=False)
-
-print(80*"=")
-print("Simulated Data:")
-print(simulation_results.model_dump_json(indent=2))
-print(80*"=")
-
 # simulate step response
-simulation_results = simulate_step_response(sim_props=simulation_props, step_props=step_props, generate_plot=False)
+step_response = simulate_step_response(sim_props=simulation_props, step_props=step_props)
 
 print(80*"=")
 print("Simulated Step Response:")
-print(simulation_results.model_dump_json(indent=2))
+print(step_response.model_dump_json(indent=2))
 print(80*"=")
 
 # simulate impulse response
-simulation_results = simulate_impulse_response(sim_props=simulation_props, impulse_props=impulse_props, generate_plot=True)
+impulse_response = simulate_impulse_response(sim_props=simulation_props, impulse_props=impulse_props)
 
 print(80*"=")
 print("Simulated Impulse Response:")
-print(simulation_results.model_dump_json(indent=2))
+print(impulse_response.model_dump_json(indent=2))
 print(80*"=")
 
-# plot simulation results
-import plotly.graph_objects as go
-for figure in simulation_results.figures:
-    fig = go.Figure(figure.spec)
-    fig.show()
+########################################################
+# TIMESERIES TOOLS
+########################################################
+characteristic_points = find_characteristic_points(step_response.data)
+print(80*"=")
+print("Characteristic Points:")
+print(characteristic_points.model_dump_json(indent=2))
+print(80*"=")
+
