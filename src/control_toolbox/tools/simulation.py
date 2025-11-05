@@ -88,7 +88,7 @@ def plotly_simulation(data: DataModel):
 # TOOLS
 ########################################################
 
-def simulate_fmu(sim_props: SimulationProps, FMU_DIR: Optional[Path] = None, generate_plot: bool = False) -> DataModel:
+def simulate(sim_props: SimulationProps, FMU_DIR: Optional[Path] = None, generate_plot: bool = False) -> DataModel:
     """
     ### Tool: simulate_fmu
 
@@ -173,7 +173,7 @@ def simulate_fmu(sim_props: SimulationProps, FMU_DIR: Optional[Path] = None, gen
     )
 
 
-def simulate_fmu_step(sim_props: SimulationProps, step_props: StepProps, FMU_DIR: Optional[Path] = None, generate_plot: bool = False) -> DataModel:
+def simulate_step_response(sim_props: SimulationProps, step_props: StepProps, FMU_DIR: Optional[Path] = None, generate_plot: bool = False) -> DataModel:
     """
     ### Tool: simulate_fmu_step
 

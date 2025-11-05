@@ -1,6 +1,6 @@
 from operator import truediv
 from control_toolbox.tools.information import get_fmu_names, get_model_description, get_all_model_descriptions
-from control_toolbox.tools.simulation import simulate_fmu, simulate_fmu_step, SimulationProps
+from control_toolbox.tools.simulation import simulate, simulate_step_response, SimulationProps
 from control_toolbox.tools.timeseries import generate_step_tool, StepProps, TimeRange
 
 ########################################################
@@ -57,14 +57,14 @@ simulation_props = SimulationProps(
 )
 
 # simulate
-simulation_results = simulate_fmu(sim_props=simulation_props)
+simulation_results = simulate(sim_props=simulation_props)
 print(80*"=")
 print("Simulated Data:")
 print(simulation_results.model_dump_json(indent=2))
 print(80*"=")
 
 # simulate step response
-simulation_results = simulate_fmu_step(sim_props=simulation_props, step_props=step_props)
+simulation_results = simulate_step_response(sim_props=simulation_props, step_props=step_props)
 
 print(80*"=")
 print("Simulated Step Response:")
