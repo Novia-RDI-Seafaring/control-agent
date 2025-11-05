@@ -1,6 +1,6 @@
 from operator import truediv
 from control_toolbox.tools.information import get_fmu_names, get_model_description, get_all_model_descriptions
-from control_toolbox.tools.simulation import simulate_tool, SimulationProps
+from control_toolbox.tools.simulation import simulate_fmu, simulate_fmu_step, SimulationProps
 from control_toolbox.tools.timeseries import generate_step_tool, StepProps, TimeRange
 
 ########################################################
@@ -49,28 +49,23 @@ print(80*"=")
 simulation_props = SimulationProps(
     fmu_name=model_names.payload[0],
     start_time=0.0,
-    stop_time=10.0,
-    output_interval=0.1
+    stop_time=30.0,
+    output_interval=0.1,
+    start_values={
+        "mode": True,
+    }
 )
+
 # simulate
-simulation_results = simulate_tool(simulation_props.fmu_name, simulation_props, generate_plot=False)
+simulation_results = simulate_fmu(sim_props=simulation_props)
 print(80*"=")
 print("Simulated Data:")
 print(simulation_results.model_dump_json(indent=2))
 print(80*"=")
 
 # simulate step response
-simulation_props = SimulationProps(
-    fmu_name=model_names.payload[0],
-    start_time=0.0,
-    stop_time=30.0,
-    output_interval=0.5,
-    input=step_results.data,
-    start_values={
-        "mode": True,
-    }
-)
-simulation_results = simulate_tool(simulation_props.fmu_name, simulation_props, generate_plot=False)
+simulation_results = simulate_fmu_step(sim_props=simulation_props, step_props=step_props)
+
 print(80*"=")
 print("Simulated Step Response:")
 print(simulation_results.model_dump_json(indent=2))

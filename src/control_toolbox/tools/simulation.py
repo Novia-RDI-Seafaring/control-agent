@@ -3,9 +3,11 @@ from typing import Dict, List, Optional, Union
 from fmpy import simulate_fmu as fmpy_simulate_fmu
 from pydantic import BaseModel, Field
 from typing import Any
+
 from control_toolbox.schema import DataModel, ResponseModel, Source, FigureModel
 from control_toolbox.tools.utils import data_model_to_ndarray, ndarray_to_data_model
 from control_toolbox.config import get_fmu_dir
+from control_toolbox.tools.timeseries import generate_step_tool, StepProps
 
 ########################################################
 # SCHEMAS
@@ -86,9 +88,9 @@ def plotly_simulation(data: DataModel):
 # TOOLS
 ########################################################
 
-def simulate_tool(fmu_name: str, sim_props: SimulationProps, FMU_DIR: Optional[Path] = None, generate_plot: bool = True) -> DataModel:
+def simulate_fmu(sim_props: SimulationProps, FMU_DIR: Optional[Path] = None, generate_plot: bool = False) -> DataModel:
     """
-    ### Tool: simulate_fmu_model
+    ### Tool: simulate_fmu
 
     Args:
         sim_props: SimulationProps containing the simulation parameters
@@ -133,7 +135,7 @@ def simulate_tool(fmu_name: str, sim_props: SimulationProps, FMU_DIR: Optional[P
     """
     if FMU_DIR is None:
         FMU_DIR = get_fmu_dir()
-    fmu_path = FMU_DIR / f"{fmu_name}.fmu"
+    fmu_path = FMU_DIR / f"{sim_props.fmu_name}.fmu"
 
     if sim_props.start_values is None:
         sim_props.start_values = {}
@@ -169,3 +171,21 @@ def simulate_tool(fmu_name: str, sim_props: SimulationProps, FMU_DIR: Optional[P
         data=data_model,
         figures=plotly_simulation(data_model) if generate_plot else None
     )
+
+
+def simulate_fmu_step(sim_props: SimulationProps, step_props: StepProps, FMU_DIR: Optional[Path] = None, generate_plot: bool = False) -> DataModel:
+    """
+    ### Tool: simulate_fmu_step
+
+    Args:
+        sim_props: SimulationProps containing the simulation parameters
+        step_props: StepProps containing the step signal properties
+        
+    Returns:
+        DataModel: simulation results
+    """
+    # generate inputs
+    sim_props.input = generate_step_tool(step_props).data
+
+    return simulate_fmu(sim_props, FMU_DIR, generate_plot)
+
