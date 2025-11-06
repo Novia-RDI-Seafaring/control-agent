@@ -7,19 +7,21 @@ from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.azure import AzureProvider
 from httpx import AsyncClient
 
-from agent.prompts import SYS_PROMPT
-from agent.tools.fmi_tools import (
+from prompts import SYS_PROMPT
+from tools.control_tool import (
+    get_all_model_descriptions,
     get_model_description,
     get_fmu_names,
     simulate_tool,
     generate_step_tool,
+    find_peaks_tool,
     analyse_step_response,
-    zn_pid_tuning
+    zn_pid_tuning,
 )
-from agent.tools.functions.schema import DataModel, SimulationModel
+
 
 # Load environment variables
-load_dotenv()
+load_dotenv(override=True)
 
 # System prompt with tuning method documentation
 SYSTEM_PROMPT = SYS_PROMPT
@@ -42,7 +44,7 @@ def create_agent(
     # Get Azure OpenAI configuration
     endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
     api_key = os.getenv("AZURE_OPENAI_API_KEY")
-    deployment = model_name or os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-4")
+    deployment = model_name or os.getenv("AZURE_OPENAI_DEPLOYMENT")
     api_version = os.getenv("AZURE_OPENAI_API_VERSION", "2024-02-01")
     
     CLIENT = AsyncClient()
@@ -77,6 +79,10 @@ def create_agent(
             name="generate_step",
             description=generate_step_tool.__doc__,
             takes_ctx=False),
+        Tool(find_peaks_tool,
+             name="find_peak",
+             description=find_peaks_tool.__doc__,
+             takes_ctx=False),
         Tool(analyse_step_response,
             name="analyse_step_response",
             description=analyse_step_response.__doc__,
@@ -86,14 +92,6 @@ def create_agent(
             name="zn_pid_tuning",
             description=zn_pid_tuning.__doc__,
             takes_ctx=False),
-        #Tool(create_signal_tool,
-        #    name="create_signal",
-        #    description=create_signal_tool.__doc__,
-        #    takes_ctx=False),
-        #Tool(merge_signals_tool,
-        #    name="merge_signals",
-        #    description=merge_signals_tool.__doc__,
-        #    takes_ctx=False),
     ]
     
     # Create agent with tools

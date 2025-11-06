@@ -5,6 +5,7 @@ description = "Experiment method and results for MCP-FMI  ECC26 paper."
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "agent-control-toolbox>=0.1.0",
     "dash>=3.2.0",
     "fastapi>=0.120.1",
     "fmpy>=0.3.26",
@@ -37,3 +38,4 @@ where = ["src"]
 
 [tool.uv.sources]
 mcp-fmi = { git = "https://github.com/Novia-RDI-Seafaring/mcp-fmi.git" }
+agent-control-toolbox = { git = "https://github.com/Novia-RDI-Seafaring/agent-control-toolbox.git" }

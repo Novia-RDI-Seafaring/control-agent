@@ -1,11 +1,12 @@
 import matplotlib.pyplot as plt
-from agent.tools.functions.schema import (
+from tools.control_tool import (
     StepProps, TimeRange, SimulationModel, AnalysisProps, 
     DataModel, StepResponseAnalysis,
     UltimateTuningProps, UltimateGainParameters,
-    FindPeaksProps, FindPeaksResult, Peak
+    FindPeaksProps, FindPeaksResult, Peak,
+    generate_step_tool, simulate_tool, analyse_step_response, 
+    zn_pid_tuning, find_peaks_tool
 )
-from agent.tools.fmi_tools import generate_step_tool, simulate_tool, analyse_step_response, zn_pid_tuning, find_peaks_tool
 import numpy as np
 
 

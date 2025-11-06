@@ -3,15 +3,15 @@
 import asyncio
 import os
 from dotenv import load_dotenv
-from agent.core import create_agent
-import logfire
+from agent.agent import create_agent
+# import logfire
 
 load_dotenv()
 
-logfire.configure()                 # read .logfire/ or env vars (token, project)
-logfire.instrument_pydantic_ai() 
+# logfire.configure()                 # read .logfire/ or env vars (token, project)
+# logfire.instrument_pydantic_ai() 
 
-logfire.info("run test.py", project="fmu-agent")
+# logfire.info("run test.py", project="fmu-agent")
 
 async def main():
     """Test the FMI agent."""
@@ -36,13 +36,13 @@ async def main():
         "tuning_overshoot": "Tune the PI controller to have approximately 10 percentage overshoot and rise time less than 2 seconds.",
     }
 
-    query = queries["system_identification"]
+    query = queries["open_loop_step"]
 
     print(f"\n2. Running query: '{query}'")
     print("   Waiting for response...\n")
     # breakpoint()
     try:
-        logfire.info(f"Execute query: {query}", project="fmu-agent")
+        # logfire.info(f"Execute query: {query}", project="fmu-agent")
         result = await agent.run(query)
         
         print("="*80)
