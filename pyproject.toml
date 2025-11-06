@@ -5,11 +5,13 @@ description = "Experiment method and results for MCP-FMI  ECC26 paper."
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "dash>=3.2.0",
     "fastapi>=0.120.1",
     "fmpy>=0.3.26",
     "logfire>=4.14.2",
     "matplotlib>=3.10.7",
     "numpy>=2.3.3",
+    "plotly>=6.3.1",
     "pydantic>=2.12.0",
     "pydantic-ai>=1.7.0",
     "pydantic-ai-slim[ag-ui,fastmcp,mcp,openai]>=1.7.0",

@@ -2,7 +2,7 @@ import os
 from typing import List, Optional, Dict, Any
 from dotenv import load_dotenv
 
-from pydantic_ai import Agent, Tool
+from pydantic_ai import Agent, Tool, ModelSettings
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.azure import AzureProvider
 from httpx import AsyncClient
@@ -26,9 +26,6 @@ SYSTEM_PROMPT = SYS_PROMPT
 
 def create_agent(
     model_name: Optional[str] = None,
-    temperature: float = 0.0,
-    verbose: bool = False,
-    max_iterations: int = 20,
     max_retries: int = 1,
 ):
     """Create FMI agent with tools.
@@ -56,7 +53,7 @@ def create_agent(
             api_key=api_key,
             api_version=api_version,
             http_client=CLIENT,
-        )
+        ),
     )
     
     TOOLS = [
@@ -105,7 +102,7 @@ def create_agent(
         instructions=SYS_PROMPT,
         name="FMIAgent",
         tools=TOOLS,
-        retries=max_retries
+        retries=max_retries,
     )
     
     return fmi_agent
