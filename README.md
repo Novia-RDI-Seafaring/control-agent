@@ -125,6 +125,42 @@ It is often useful to provide resources to an agent to help it understand how sp
 
 ## The Agent
 
+The FMI Agent is an intelligent assistant that can interact with FMU models, perform simulations, and provide generative UI components for visualization. It uses the AG-UI protocol to enable dynamic UI rendering based on simulation results.
+
+### Features
+- **Generative UI**: Automatically renders appropriate UI components based on context
+- **FMU Simulation**: Run simulations and visualize results with interactive plots
+- **Model Information**: Display detailed FMU metadata and variable information
+- **Signal Creation**: Create and visualize custom input signals
+- **Real-time Chat**: Interactive chat interface with the agent
+
+### Quick Start
+
+1. **Setup the environment:**
+```bash
+# Install Python dependencies
+uv sync
+
+# Setup frontend (requires Node.js)
+python setup_frontend.py
+```
+
+2. **Start the development servers:**
+```bash
+# Start both backend and frontend
+python start_dev.py
+```
+
+3. **Access the interface:**
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000
+
+### Usage Examples
+
+- "Show me information about the fopdt_pi model" → Displays model metadata and variables
+- "Simulate the fopdt_pi model for 10 seconds" → Shows interactive simulation plot
+- "Create a sine wave signal" → Displays signal visualization
+- "Tune the PI controller using Lambda tuning" → Shows controller parameters and performance
 
 ## Experiment queries
 
@@ -139,6 +175,11 @@ It is often useful to provide resources to an agent to help it understand how sp
 | "Tune the PI controller with Lambda tuning for balanced response"     | 1. Select $\lambda = T$.<br>2. Compute $K_c = \dfrac{T}{K(\lambda + L)}$, $T_i = T$.<br>3. `set_parameters`.         | Controller updated for balanced-response tuning.                                |
 | "Tune the PI controller with Lambda tuning for robust response"       | 1. Select $\lambda \ge 2T$.<br>2. Compute $K_c = \dfrac{T}{K(\lambda + L)}$, $T_i = T$.<br>3. `set_parameters`.      | Controller updated for robust-response tuning.                                  |
 | "Tune the PI controller using Ziegler-Nichols closed-loop method"     | 1. Disable integral action ($T_i \to \infty$).<br>2. Increase $K_p$ until sustained oscillations → record $K_u$, $T_u$.<br>3. Compute $K_p = 0.45K_u$, $T_i = \dfrac{T_u}{1.2}$.<br>4. `set_parameters`. | Controller updated using Ziegler–Nichols closed-loop tuning.                    |
+
+# Logfire
+- Run `logfire auth` and follow instructions to authenticate your local envoronment
+- Point to correct project: `uv run logfire projects use "agent-fmi"`
+- 
 
 
 
