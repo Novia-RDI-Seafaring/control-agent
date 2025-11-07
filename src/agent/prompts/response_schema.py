@@ -20,5 +20,35 @@ class GetMetadataResponse(BaseModel):
     license: str
     generation_tool: str
     generation_date_and_time: str
-    
-    
+
+class Signal(BaseModel):
+    name: str
+    values: List[float]
+
+class StepResponse(BaseModel):
+    timestamps: List[float]
+    inputs: List[Signal]
+    outputs: List[Signal]
+
+class SystemParameters(BaseModel):
+    K: float
+    T: float
+    L: float
+
+class PIDParameters(BaseModel):
+    Kp: float
+    Ti: float
+    Td: float
+
+class SystemIdentificationResponse(BaseModel):
+    method: str
+    parameters: SystemParameters
+
+class LambdaTuningResponse(BaseModel):
+    system_parameters: SystemParameters
+    lambda_parameter: float
+    controller_parameters: PIDParameters
+
+class UltimateGainResponse(BaseModel):
+    Ku: float
+    Pu: float

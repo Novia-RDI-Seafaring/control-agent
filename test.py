@@ -10,7 +10,11 @@ from agent.prompts.response_schema import (
     get_json_schema,
     ListModelNamesResponse,
     ListIOPResponse,
-    GetMetadataResponse
+    GetMetadataResponse,
+    StepResponse,
+    SystemIdentificationResponse,
+    LambdaTuningResponse,
+    UltimateGainResponse
 )
 # import logfire
 load_dotenv()
@@ -20,7 +24,37 @@ load_dotenv()
 
 # logfire.info("run test.py", project="fmu-agent")
 
+MODEL_NAME = "PI_FOPDT_2"
+QUERY_NAME = "ultimate_gain"
 
+queries = {
+    "list_model_names": "List available FMU models.",
+    "list_iop": f"List the inputs, outputs, and parameters of the model {MODEL_NAME}.",
+    "get_metadata": f"Get THE metadata for the model {MODEL_NAME}.",
+    "open_loop_step": f"Simulate an open-loop step response for model {MODEL_NAME} with input change from 0 to 1.",
+    "closed_loop_step": f"Simulate a closed-loop step response for model {MODEL_NAME} with input change from 0 to 1",
+    "system_identification": f"Make a step response for model {MODEL_NAME} and identify the static gain (K), time constant (T), and dead time (L).",
+    "ultimate_gain": f"Perform closed-loop experimentes on the model {MODEL_NAME} to determine the ultimate gain (Ku) and ultimate period (Pu).",
+    "lambda_tuning": f"Tune the PI controller of model {MODEL_NAME} using λ-tuning for a balanced response.",
+    "z_n": f"Tune the PI controller of model {MODEL_NAME} using Ziegler-Nichols closed-loop method.",
+    "tuning_overshoot": f"Tune the PI controller of model {MODEL_NAME} to have approximately 10 percentage overshoot and rise time less than 2 seconds.",
+}
+
+response_schema = {
+    "list_model_names": get_json_schema(ListModelNamesResponse),
+    "list_iop": get_json_schema(ListIOPResponse),
+    "get_metadata": get_json_schema(GetMetadataResponse),
+    "open_loop_step": get_json_schema(StepResponse),
+    "closed_loop_step": get_json_schema(StepResponse),
+    "system_identification": get_json_schema(SystemIdentificationResponse),
+    "lambda_tuning": get_json_schema(LambdaTuningResponse),
+    "ultimate_gain": get_json_schema(UltimateGainResponse),
+}
+
+query = f"""
+QUERY: {queries[QUERY_NAME]}
+RESPONSE SCHEMA: {response_schema[QUERY_NAME]}
+"""
 
 async def main():
     """Test the FMI agent."""
@@ -34,33 +68,6 @@ async def main():
     agent = create_agent(max_retries=3)
     print("Agent created successfully")
     print(agent)
-    
-
-    MODEL_NAME = "PI_FOPDT_2"
-    QUERY_NAME = "list_iop"
-
-    queries = {
-        "list_model_names": "List available FMU models.",
-        "list_iop": f"List the inputs, outputs, and parameters of the model {MODEL_NAME}.",
-        "get_metadata": f"Get THE metadata for the model {MODEL_NAME}.",
-        "open_loop_step": "Simulate an open-loop step response with input change from 0 to 1.",
-        "closed_loop_step": "Simulate a closed-loop step response with input change from 0 to 1",
-        "system_identification": "Make a step response and identify the static gain K, time constant T, and dead time L of a FOPDT model",
-        "lambda_tuning": "Tune the PI controller using λ-tuning for a balanced response.",
-        "z_n": "Perform experiments to tune the PI controller using Ziegler-Nichols closed-loop method. Report the tuned controller parameters Kp, Ti and other intermediate parameters in response.",
-        "tuning_overshoot": "Tune the PI controller to have approximately 10 percentage overshoot and rise time less than 2 seconds.",
-    }
-
-    response_schema = {
-        "list_model_names": get_json_schema(ListModelNamesResponse),
-        "list_iop": get_json_schema(ListIOPResponse),
-        "get_metadata": get_json_schema(GetMetadataResponse),
-    }
-
-    query = f"""
-    QUERY: {queries[QUERY_NAME]}
-    RESPONSE SCHEMA: {response_schema[QUERY_NAME]}
-    """
 
     print(f"\n2. Running query: '{query}'")
     print("   Waiting for response...\n")
