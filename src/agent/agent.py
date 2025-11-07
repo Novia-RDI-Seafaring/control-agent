@@ -7,13 +7,15 @@ from pydantic_ai.models.openai import OpenAIChatModel, OpenAIResponsesModel
 from pydantic_ai.models import Model, KnownModelName
 from pydantic_ai.providers import Provider
 from openai import AsyncOpenAI
-
 from logging import getLogger
 from prompts import SYS_PROMPT
-
 from control_toolbox.tools.information import (
     get_fmu_names,
     get_model_description
+)
+from control_toolbox.tools.simulation import (
+    simulate,
+    simulate_step_response,
 )
 
 from control_toolbox.config import *
@@ -79,11 +81,19 @@ def get_tools() -> list[Tool[Any]]:
             name="get_fmu_names",
             description=get_fmu_names.__doc__,
             takes_ctx=False),
-        Tool(get_model_description,
-            name="get_model_description",
-            description=get_model_description.__doc__,
-            takes_ctx=False),
-    ]
+            Tool(get_model_description,
+                name="get_model_description",
+                description=get_model_description.__doc__,
+                takes_ctx=False),
+            Tool(simulate,
+                name="simulate",
+                description=simulate.__doc__,
+                takes_ctx=False),
+            Tool(simulate_step_response,
+                name="simulate_step_response",
+                description=simulate_step_response.__doc__,
+                takes_ctx=False),
+]
 
 def add_tools(agent: Agent, tools: list[Tool[Any]]) -> Agent:
     for tool in tools:

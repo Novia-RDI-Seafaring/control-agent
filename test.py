@@ -1,17 +1,26 @@
 """Simple test script to verify the FMI agent works."""
 
 import asyncio
+
 import os
 from dotenv import load_dotenv
 from agent.agent import create_agent
-# import logfire
 
+from agent.prompts.response_schema import (
+    get_json_schema,
+    ListModelNamesResponse,
+    ListIOPResponse,
+    GetMetadataResponse
+)
+# import logfire
 load_dotenv()
 
 # logfire.configure()                 # read .logfire/ or env vars (token, project)
 # logfire.instrument_pydantic_ai() 
 
 # logfire.info("run test.py", project="fmu-agent")
+
+
 
 async def main():
     """Test the FMI agent."""
@@ -26,10 +35,14 @@ async def main():
     print("Agent created successfully")
     print(agent)
     
+
+    MODEL_NAME = "PI_FOPDT_2"
+    QUERY_NAME = "list_iop"
+
     queries = {
-        "list_models": "List available FMU models.",
-        "get_model_description": "Get model descriptions of all available models.",
-        "model_description": "List available models and their model descriptions.",
+        "list_model_names": "List available FMU models.",
+        "list_iop": f"List the inputs, outputs, and parameters of the model {MODEL_NAME}.",
+        "get_metadata": f"Get THE metadata for the model {MODEL_NAME}.",
         "open_loop_step": "Simulate an open-loop step response with input change from 0 to 1.",
         "closed_loop_step": "Simulate a closed-loop step response with input change from 0 to 1",
         "system_identification": "Make a step response and identify the static gain K, time constant T, and dead time L of a FOPDT model",
@@ -38,7 +51,16 @@ async def main():
         "tuning_overshoot": "Tune the PI controller to have approximately 10 percentage overshoot and rise time less than 2 seconds.",
     }
 
-    query = queries["get_model_description"]
+    response_schema = {
+        "list_model_names": get_json_schema(ListModelNamesResponse),
+        "list_iop": get_json_schema(ListIOPResponse),
+        "get_metadata": get_json_schema(GetMetadataResponse),
+    }
+
+    query = f"""
+    QUERY: {queries[QUERY_NAME]}
+    RESPONSE SCHEMA: {response_schema[QUERY_NAME]}
+    """
 
     print(f"\n2. Running query: '{query}'")
     print("   Waiting for response...\n")
