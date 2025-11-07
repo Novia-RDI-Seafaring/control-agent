@@ -11,7 +11,7 @@ dataset = Dataset["str", "str", Any](
     cases=[
         Case(
             name='run_simulation_tool',
-            inputs="Cah you run the simulation tool? on the FMU named PI_FOPDT.fmu",
+            inputs="Cah you run the simulation tool? on the FMU named PI_FOPDT_2.fmu",
             metadata={
                 'focus': 'tool use ',
                 'description': 'Tests if the agent is able to use the simulation tool'
