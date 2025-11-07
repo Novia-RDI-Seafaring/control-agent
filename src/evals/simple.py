@@ -34,7 +34,10 @@ Method = Literal["zn", "lam"]
 ## input_type=FOPDT,
 ##
 #id_tuning_agent = Agent[ControllerPI, FOPDT](
-simulation_agent = Agent(
+class SomeInput(BaseModel):
+    input: str
+
+step_changer = Agent[SomeInput, SomeInput](
         model="gpt-4o-mini",
        
         system_prompt="You are a helpful assistant that provides concise responses. always use tools if you can",
@@ -53,7 +56,7 @@ app = Typer()
 
 @app.command()
 def evaluate(experiment: Optional[str] = None):
-    from mcp_fmi_ecc26.evals.datasets import all as datasets
+    from evals.datasets import all as datasets
     """Evaluate the agent on all datasets"""
     for key, dataset in datasets.items():
         if experiment and key != experiment: continue

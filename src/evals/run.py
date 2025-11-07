@@ -15,13 +15,11 @@ logfire.configure(token=os.getenv('LOGFIRE_WRITE_TOKEN'), send_to_logfire=False)
 logfire.instrument_pydantic_ai()
 logfire.instrument_openai()
 
-from agent.core import create_agent
-from mcp_fmi_ecc26.evals.report import render_report, save_report
-
-models = ["gpt-4o-mini", "gpt-4o", "gpt-5", "gpt-3.5-turbo"]
+from agent.agent import create_agent
+from evals.report import render_report, save_report
 
 async def agent_runner(question: str) -> str:
-    fmi_agent = create_agent(model="gpt-4o-mini", model_name="fmi_agent")
+    fmi_agent = create_agent(model_name="gpt-4o")
     result = await fmi_agent.run(question)
     return result.output
 
@@ -31,7 +29,7 @@ app = Typer()
 
 @app.command()
 def evaluate(experiment: Optional[str] = None):
-    from mcp_fmi_ecc26.evals.datasets import all as datasets
+    from evals.datasets import all as datasets
     """Evaluate the agent on all datasets"""
     for key, dataset in datasets.items():
         if experiment and key != experiment: continue
