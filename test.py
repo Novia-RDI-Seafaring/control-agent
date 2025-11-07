@@ -27,6 +27,8 @@ async def main():
     print(agent)
     
     queries = {
+        "list_models": "List available FMU models.",
+        "get_model_description": "Get model descriptions of all available models.",
         "model_description": "List available models and their model descriptions.",
         "open_loop_step": "Simulate an open-loop step response with input change from 0 to 1.",
         "closed_loop_step": "Simulate a closed-loop step response with input change from 0 to 1",
@@ -36,7 +38,7 @@ async def main():
         "tuning_overshoot": "Tune the PI controller to have approximately 10 percentage overshoot and rise time less than 2 seconds.",
     }
 
-    query = queries["open_loop_step"]
+    query = queries["get_model_description"]
 
     print(f"\n2. Running query: '{query}'")
     print("   Waiting for response...\n")

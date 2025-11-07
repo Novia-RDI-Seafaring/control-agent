@@ -10,23 +10,26 @@ from openai import AsyncOpenAI
 
 from logging import getLogger
 from prompts import SYS_PROMPT
-from tools.control_tool import (
-    get_all_model_descriptions,
-    get_model_description,
+
+from control_toolbox.tools.information import (
     get_fmu_names,
-    simulate_tool,
-    generate_step_tool,
-    find_peaks_tool,
-    analyse_step_response,
-    zn_pid_tuning,
+    get_model_description
 )
+
+from control_toolbox.config import *
+
+# set patch fo FMU models
+set_fmu_dir(Path(__file__).parents[2] / "models" / "fmus")
 
 logger = getLogger(__name__)
 # Load environment variables
 load_dotenv(override=True)
 
-default_provider = os.getenv("DEFAULT_PROVIDER", "openai")
-default_model = os.getenv("DEFAULT_MODEL", "openai:gpt-4o")
+#default_provider = os.getenv("DEFAULT_PROVIDER", "openai")
+#default_model = os.getenv("DEFAULT_MODEL", "openai:gpt-4o")
+
+default_model = None
+default_provider = "azure"
 
 if os.getenv("AZURE_OPENAI_API_KEY", os.getenv("OPENAI_API_KEY", None)) is not None:
 
@@ -72,34 +75,13 @@ SYSTEM_PROMPT = SYS_PROMPT
 
 def get_tools() -> list[Tool[Any]]:
     return [
-        Tool(get_model_description,
-            name="get_model_description",
-            description=get_model_description.__doc__,
-            takes_ctx=False),
         Tool(get_fmu_names,
             name="get_fmu_names",
             description=get_fmu_names.__doc__,
             takes_ctx=False),
-        Tool(simulate_tool,
-            name="simulate_fmu",  # expose the desired tool name
-            description=simulate_tool.__doc__,
-            takes_ctx=False),
-        Tool(generate_step_tool,
-            name="generate_step",
-            description=generate_step_tool.__doc__,
-            takes_ctx=False),
-        Tool(find_peaks_tool,
-             name="find_peak",
-             description=find_peaks_tool.__doc__,
-             takes_ctx=False),
-        Tool(analyse_step_response,
-            name="analyse_step_response",
-            description=analyse_step_response.__doc__,
-            max_retries=3, 
-            takes_ctx=False),
-        Tool(zn_pid_tuning,
-            name="zn_pid_tuning",
-            description=zn_pid_tuning.__doc__,
+        Tool(get_model_description,
+            name="get_model_description",
+            description=get_model_description.__doc__,
             takes_ctx=False),
     ]
 
