@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import Dict, Any
+from typing import Dict, Any, Mapping
 
 from pydantic_ai_examples.evals.models import (
     TimeRangeBuilderSuccess,
@@ -10,9 +10,11 @@ from pydantic_ai_examples.evals.models import (
 from pydantic_evals.evaluators import (
     Evaluator,
     EvaluatorContext,
+    EvaluationReason,
     EvaluatorOutput,
+    EvaluationResult,
 )
-from pydantic_evals.otel import SpanQuery
+from pydantic_evals.evaluators.evaluator import EvaluationScalar
 
 from logging import getLogger
 logger = getLogger(__name__)
@@ -25,7 +27,7 @@ class Yaysayer(Evaluator[object, object, object]):
     zip: bool
     
 
-    def evaluate(self, ctx: EvaluatorContext[object, object, object]) -> bool:
+    def evaluate(self, ctx: EvaluatorContext[object, object, object]) -> EvaluationResult:
         # Access case data
         ctx.name              # Case name
         ctx.inputs            # Task inputs
@@ -48,4 +50,11 @@ class Yaysayer(Evaluator[object, object, object]):
         logger.info(self.bar)
         logger.info(self.baz)
         logger.info(self.zip)
-        return True
+        return EvaluationReason(value=True, reason="You are a yaysayer")
+        """
+        return Mapping[str, EvaluationScalar|EvaluationReason]({
+            "foo": 0.4,
+            "bar": True,
+            "baz": EvaluationReason(value=False, reason="You need to score at least 0.5"),
+            "zip": "yuppp",
+        })"""

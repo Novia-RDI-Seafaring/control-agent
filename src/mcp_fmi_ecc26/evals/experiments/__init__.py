@@ -4,5 +4,5 @@ from typing import Dict, Any
 
 
 all = {
-    'list_models': (lm.dataset, lm.agent, lm.ExperimentInputType, lm.ExperimentOutputType),
+    'list_models': (lm.dataset, lm.agent),
 }

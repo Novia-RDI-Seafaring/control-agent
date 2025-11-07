@@ -27,9 +27,9 @@ app = Typer()
 
 @app.command()
 def evaluate(experiment: Optional[str] = None):
-    from evals.experiments import all as datasets
+    from evals.experiments import all as experiments
     """Evaluate the agent on all datasets"""
-    for key, (dataset, agent, input_type, output_type) in datasets.items():
+    for key, (dataset, agent) in experiments.items():
         if experiment and key != experiment: continue
        
         async def agent_runner(experiment_input): # type: ignore
