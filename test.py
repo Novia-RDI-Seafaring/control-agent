@@ -5,13 +5,22 @@ import os
 from dotenv import load_dotenv
 from control_agent.agent.agent import create_agent
 # import logfire
+from control_toolbox.config import set_fmu_dir
+from control_agent.experiment_definitions.definitions import experiment_definitions
+from pathlib import Path
+import logfire
 
 load_dotenv()
 
-# logfire.configure()                 # read .logfire/ or env vars (token, project)
-# logfire.instrument_pydantic_ai() 
+logfire.configure()                 # read .logfire/ or env vars (token, project)
+logfire.instrument_pydantic_ai() 
 
-# logfire.info("run test.py", project="fmu-agent")
+logfire.info("run test.py", project="fmu-agent")
+
+set_fmu_dir(Path(__file__).parents[2] / "models" / "fmus")
+
+experiment_definitions.model_name = "PI_FOPDT_2"
+query = experiment_definitions.construct_query("open_loop_step")
 
 async def main():
     """Test the FMI agent."""
@@ -25,18 +34,6 @@ async def main():
     agent = create_agent(max_retries=3)
     print("Agent created successfully")
     print(agent)
-    
-    queries = {
-        "model_description": "List available models and their model descriptions.",
-        "open_loop_step": "Simulate an open-loop step response with input change from 0 to 1.",
-        "closed_loop_step": "Simulate a closed-loop step response with input change from 0 to 1",
-        "system_identification": "Make a step response and identify the static gain K, time constant T, and dead time L of a FOPDT model",
-        "lambda_tuning": "Tune the PI controller using λ-tuning for a balanced response.",
-        "z_n": "Perform experiments to tune the PI controller using Ziegler-Nichols closed-loop method. Report the tuned controller parameters Kp, Ti and other intermediate parameters in response.",
-        "tuning_overshoot": "Tune the PI controller to have approximately 10 percentage overshoot and rise time less than 2 seconds.",
-    }
-
-    query = queries["open_loop_step"]
 
     print(f"\n2. Running query: '{query}'")
     print("   Waiting for response...\n")
