@@ -11,16 +11,27 @@ from openai import AsyncOpenAI
 
 from logging import getLogger
 from control_agent.prompts import SYS_PROMPT
-from control_agent.tools.control_tool import (
-    get_model_description,
+from control_toolbox.tools.information import (
     get_fmu_names,
-    simulate_tool,
-    generate_step_tool,
-    find_peaks_tool,
-    analyse_step_response,
-    zn_pid_tuning,
+    get_model_description
+)
+from control_toolbox.tools.simulation import (
+    simulate,
+    simulate_step_response,
 )
 
+from control_toolbox.tools.identification import (
+    identify_fopdt_from_step
+)
+
+from control_toolbox.tools.analysis import (
+    find_inflection_point,
+    find_characteristic_points,
+    find_peaks,
+    find_settling_time,
+)
+
+from control_toolbox.config import *
 logger = getLogger(__name__)
 # Load environment variables
 load_dotenv(override=True)
@@ -75,36 +86,42 @@ SYSTEM_PROMPT = SYS_PROMPT
 
 def get_tools() -> list[Tool[Any]]:
     return [
-        Tool(get_model_description,
-            name="get_model_description",
-            description=get_model_description.__doc__,
-            takes_ctx=False),
+        # information tools
         Tool(get_fmu_names,
             name="get_fmu_names",
             description=get_fmu_names.__doc__,
             takes_ctx=False),
-        Tool(simulate_tool,
-            name="simulate_fmu",  # expose the desired tool name
-            description=simulate_tool.__doc__,
+        Tool(get_model_description,
+            name="get_model_description",
+            description=get_model_description.__doc__,
             takes_ctx=False),
-        Tool(generate_step_tool,
-            name="generate_step",
-            description=generate_step_tool.__doc__,
+        #simulate
+        Tool(simulate_step_response,
+            name="simulate_step_response",
+            description=simulate_step_response.__doc__,
             takes_ctx=False),
-        Tool(find_peaks_tool,
-             name="find_peak",
-             description=find_peaks_tool.__doc__,
-             takes_ctx=False),
-        Tool(analyse_step_response,
-            name="analyse_step_response",
-            description=analyse_step_response.__doc__,
-            max_retries=3, 
+        Tool(identify_fopdt_from_step,
+            name="identify_fopdt_from_step",
+            description=identify_fopdt_from_step.__doc__,
             takes_ctx=False),
-        Tool(zn_pid_tuning,
-            name="zn_pid_tuning",
-            description=zn_pid_tuning.__doc__,
+        # analysis
+        Tool(find_inflection_point,
+            name="find_inflection_point",
+            description=find_inflection_point.__doc__,
             takes_ctx=False),
-    ]
+        Tool(find_characteristic_points,
+            name="find_characteristic_points",
+            description=find_characteristic_points.__doc__,
+            takes_ctx=False),
+        Tool(find_peaks,
+            name="find_peaks",
+            description=find_peaks.__doc__,
+            takes_ctx=False),
+        Tool(find_settling_time,
+            name="find_settling_time",
+            description=find_settling_time.__doc__,
+            takes_ctx=False),
+]
 from pydantic_ai._run_context import AgentDepsT, RunContext
 from pydantic_ai.output import OutputDataT
 
