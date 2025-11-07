@@ -52,3 +52,13 @@ class LambdaTuningResponse(BaseModel):
 class UltimateGainResponse(BaseModel):
     Ku: float
     Pu: float
+
+class ZNResponse(BaseModel):
+    Ku: float
+    Pu: float
+    controller_parameters: PIDParameters
+
+class TuningOvershootResponse(BaseModel):
+    controller_parameters: PIDParameters
+    overshoot: float
+    rise_time: float

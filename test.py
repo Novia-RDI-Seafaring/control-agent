@@ -14,7 +14,9 @@ from agent.prompts.response_schema import (
     StepResponse,
     SystemIdentificationResponse,
     LambdaTuningResponse,
-    UltimateGainResponse
+    UltimateGainResponse,
+    ZNResponse,
+    TuningOvershootResponse
 )
 # import logfire
 load_dotenv()
@@ -25,15 +27,15 @@ load_dotenv()
 # logfire.info("run test.py", project="fmu-agent")
 
 MODEL_NAME = "PI_FOPDT_2"
-QUERY_NAME = "ultimate_gain"
+QUERY_NAME = "system_identification"
 
 queries = {
     "list_model_names": "List available FMU models.",
     "list_iop": f"List the inputs, outputs, and parameters of the model {MODEL_NAME}.",
-    "get_metadata": f"Get THE metadata for the model {MODEL_NAME}.",
+    "get_metadata": f"Get the metadata for the model {MODEL_NAME}.",
     "open_loop_step": f"Simulate an open-loop step response for model {MODEL_NAME} with input change from 0 to 1.",
     "closed_loop_step": f"Simulate a closed-loop step response for model {MODEL_NAME} with input change from 0 to 1",
-    "system_identification": f"Make a step response for model {MODEL_NAME} and identify the static gain (K), time constant (T), and dead time (L).",
+    "system_identification": f"Simulate an open-loop step response for model {MODEL_NAME} and identify the static gain (K), time constant (T), and dead time (L).",
     "ultimate_gain": f"Perform closed-loop experimentes on the model {MODEL_NAME} to determine the ultimate gain (Ku) and ultimate period (Pu).",
     "lambda_tuning": f"Tune the PI controller of model {MODEL_NAME} using λ-tuning for a balanced response.",
     "z_n": f"Tune the PI controller of model {MODEL_NAME} using Ziegler-Nichols closed-loop method.",
@@ -49,6 +51,76 @@ response_schema = {
     "system_identification": get_json_schema(SystemIdentificationResponse),
     "lambda_tuning": get_json_schema(LambdaTuningResponse),
     "ultimate_gain": get_json_schema(UltimateGainResponse),
+    "z_n": get_json_schema(ZNResponse),
+    "tuning_overshoot": get_json_schema(TuningOvershootResponse),
+}
+
+from pydantic import BaseModel, Field
+from typing import List, Dict, Optional
+
+class ToolUse(BaseModel):
+    name: str
+    max_runs: Optional[int] = Field(default=1, description="Maximum allowed runs for this tool")
+
+def define_tool_use(required: List[ToolUse], optional: List[ToolUse]) -> dict:
+    return {"required": required, "optional": optional}
+
+expected_tool_use: Dict[str, dict] = {
+    "list_model_names": define_tool_use(
+        required=[ToolUse(name="get_fmu_names", max_runs=1)],
+        optional=[]
+    ),
+    "list_iop": define_tool_use(
+        required=[ToolUse(name="get_model_description", max_runs=1)],
+        optional=[ToolUse(name="get_fmu_names")]
+    ),
+    "get_metadata": define_tool_use(
+        required=[ToolUse(name="get_model_description", max_runs=1)],
+        optional=[ToolUse(name="get_fmu_names")]
+    ),
+    "open_loop_step": define_tool_use(
+        required=[ToolUse(name="simulate_step_response", max_runs=1)],
+        optional=[ToolUse(name="get_fmu_names"),
+                  ToolUse(name="get_model_description")]
+    ),
+    "closed_loop_step": define_tool_use(
+        required=[ToolUse(name="simulate_step_response", max_runs=1)],
+        optional=[ToolUse(name="get_fmu_names"),
+                  ToolUse(name="get_model_description")]
+    ),
+    "system_identification": define_tool_use(
+        required=[ToolUse(name="simulate_step_response", max_runs=1),
+                  ToolUse(name="identify_fopdt_from_step", max_runs=1)],
+        optional=[ToolUse(name="get_fmu_names"),
+                  ToolUse(name="get_model_description")]
+    ),
+    "lambda_tuning": define_tool_use(
+        required=[ToolUse(name="simulate_step_response", max_runs=1),
+                  ToolUse(name="identify_fopdt_from_step", max_runs=1),
+                  ToolUse(name="pid_lambda_tuning", max_runs=1)],
+        optional=[ToolUse(name="get_fmu_names"),
+                  ToolUse(name="get_model_description")]
+    ),
+    "ultimate_gain": define_tool_use(
+        required=[ToolUse(name="simulate_step_response", max_runs=10),
+                  ToolUse(name="find_peaks", max_runs=1)],
+        optional=[ToolUse(name="get_fmu_names"),
+                  ToolUse(name="get_model_description")]
+    ),
+    "z_n": define_tool_use(
+        required=[ToolUse(name="simulate_step_response", max_runs=10),
+                  ToolUse(name="find_peaks", max_runs=1),
+                  ToolUse(name="zn_pid_tuning", max_runs=1)],
+        optional=[ToolUse(name="get_fmu_names"),
+                  ToolUse(name="get_model_description")]
+    ),
+    "tuning_overshoot": define_tool_use(
+        required=[ToolUse(name="simulate_step_response", max_runs=10),
+                  ToolUse(name="find_overshoot", max_runs=1),
+                  ToolUse(name="find_rise_time", max_runs=1)],
+        optional=[ToolUse(name="get_fmu_names"),
+                  ToolUse(name="get_model_description")]
+    ),
 }
 
 query = f"""
