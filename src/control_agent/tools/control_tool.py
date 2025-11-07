@@ -139,7 +139,7 @@ def make_dash_layout(inputs: DataModel, outputs: DataModel, port: int = 8051) ->
 
 def get_all_model_descriptions() -> FMUCollection:
     """Lists all FMU models in the directory and their information."""
-    FMU_DIR = DEFAULT_FMU_DIR
+    FMU_DIR = get_fmu_dir()
     result = _get_all_model_descriptions(FMU_DIR)
     # Convert ResponseModel to FMUCollection
     if isinstance(result.payload, list):
@@ -150,14 +150,14 @@ def get_all_model_descriptions() -> FMUCollection:
 def get_model_description(fmu_name: str) -> FMUInfo:
     """Gets the model description of a specific FMU model."""
     print(f"[DEBUG] running description tool")
-    FMU_DIR = DEFAULT_FMU_DIR
+    FMU_DIR = get_fmu_dir()
     result = _get_model_description(fmu_name, FMU_DIR)
     return result.payload if isinstance(result.payload, FMUInfo) else result.payload
 
 def get_fmu_names() -> List[str]:
     """Lists the models in the FMU directory."""
     print(f"[DEBUG] running get fmu names tool")
-    FMU_DIR = DEFAULT_FMU_DIR
+    FMU_DIR = get_fmu_dir()
     print(f"[DEBUG] Looking for FMUs in: {FMU_DIR}")
     print(f"[DEBUG] Directory exists: {FMU_DIR.exists()}")
     
@@ -185,7 +185,7 @@ def simulate_tool(sim: SimulationModel) -> DataModel:
         DataModel: simulation results
     """
     print(f"[DEBUG] running simulation tool")
-    FMU_DIR = DEFAULT_FMU_DIR
+    FMU_DIR = get_fmu_dir()
     if sim.start_values is None:
         sim.start_values = {}
     

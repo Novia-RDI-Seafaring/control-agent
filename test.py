@@ -1,5 +1,5 @@
 """Simple test script to verify the FMI agent works."""
-
+from pathlib import Path
 import asyncio
 import os
 from dotenv import load_dotenv
@@ -9,6 +9,12 @@ import logfire
 
 load_dotenv()
 
+from control_toolbox.config import *
+# set path for FMU models (located in root models/fmus directory)
+# test.py is at root, so use parent (or parents[0]) to get root directory
+fmu_path = (Path(__file__).resolve().parent / "models" / "fmus").resolve()
+set_fmu_dir(fmu_path)
+
 logfire.configure()                 # read .logfire/ or env vars (token, project)
 logfire.instrument_pydantic_ai() 
 
@@ -16,7 +22,7 @@ logfire.info("run test.py", project="fmu-agent")
 
 # set experiment
 experiment_definitions.model_name = "PI_FOPDT_2"
-query = experiment_definitions.construct_query("open_loop_step")
+query = experiment_definitions.construct_query("list_model_names")
 
 async def main():
     """Test the FMI agent."""
