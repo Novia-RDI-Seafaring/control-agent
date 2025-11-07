@@ -10,19 +10,30 @@ import logfire
 load_dotenv()
 
 from control_toolbox.config import *
-# set path for FMU models (located in root models/fmus directory)
-# test.py is at root, so use parent (or parents[0]) to get root directory
 fmu_path = (Path(__file__).resolve().parent / "models" / "fmus").resolve()
 set_fmu_dir(fmu_path)
 
+# logging
 logfire.configure()                 # read .logfire/ or env vars (token, project)
 logfire.instrument_pydantic_ai() 
 
 logfire.info("run test.py", project="fmu-agent")
 
-# set experiment
+########################
+# SET EXPERIMENT
+########################
+# Experiments:
+# - list_model_names
+# - list_iop
+# - get_metadata
+# - open_loop_step
+# - closed_loop_step
+# - system_identification
+# - ultimate_gain
+# - lambda_tuning
+# - z_n
 experiment_definitions.model_name = "PI_FOPDT_2"
-query = experiment_definitions.construct_query("list_model_names")
+query = experiment_definitions.construct_query("closed_loop_step")
 
 async def main():
     """Test the FMI agent."""
