@@ -136,6 +136,7 @@ def create_agent(
         instructions=SYSTEM_PROMPT,
         name=name,
         retries=max_retries,
+        output_type=output_type,
         tools=get_tools()
     )
 
