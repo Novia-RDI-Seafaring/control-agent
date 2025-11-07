@@ -4,10 +4,7 @@ import asyncio
 import os
 from dotenv import load_dotenv
 from control_agent.agent.agent import create_agent
-# import logfire
-from control_toolbox.config import set_fmu_dir
 from control_agent.experiment_definitions.definitions import experiment_definitions
-from pathlib import Path
 import logfire
 
 load_dotenv()
@@ -17,8 +14,7 @@ logfire.instrument_pydantic_ai()
 
 logfire.info("run test.py", project="fmu-agent")
 
-set_fmu_dir(Path(__file__).parents[2] / "models" / "fmus")
-
+# set experiment
 experiment_definitions.model_name = "PI_FOPDT_2"
 query = experiment_definitions.construct_query("open_loop_step")
 
