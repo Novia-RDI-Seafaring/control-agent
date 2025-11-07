@@ -8,13 +8,13 @@ from agent.agent import create_agent
 
 from experiments.definitions import experiment_definitions
 
-# import logfire
+import logfire
 load_dotenv()
 
-# logfire.configure()                 # read .logfire/ or env vars (token, project)
-# logfire.instrument_pydantic_ai() 
+logfire.configure()                 # read .logfire/ or env vars (token, project)
+logfire.instrument_pydantic_ai() 
 
-# logfire.info("run test.py", project="fmu-agent")
+logfire.info("run test.py", project="fmu-agent")
 
 QUERY_NAME = "closed_loop_step"
 

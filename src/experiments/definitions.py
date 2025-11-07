@@ -97,6 +97,7 @@ class ExperimentDefinitions:
 # REGISTER QUERIES
 ########################################################
 experiment_definitions = ExperimentDefinitions(model_name="PI_FOPDT_2")
+experiment_definitions.model_name = "PI_FOPDT_2"
 
 #1) list_model_names
 experiment_definitions.register_query(
