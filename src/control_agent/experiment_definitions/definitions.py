@@ -226,3 +226,17 @@ experiment_definitions.register_query(
         optional=[ToolUse(name="get_fmu_names"), ToolUse(name="get_model_description")]
     )
 )
+
+#11) get model description
+from control_toolbox.tools.information import ModelDescription
+experiment_definitions.register_query(
+    query_name="model_description",
+    query="Get the model description.",
+    response_schema=get_json_schema(ModelDescription),
+    expected_tool_use=define_tool_use(
+        required=[
+            ToolUse(name="get_model_description"),
+        ],
+        optional=[ToolUse(name="get_fmu_names")]
+    )
+)

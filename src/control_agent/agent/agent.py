@@ -12,7 +12,6 @@ from openai import AsyncOpenAI
 from logging import getLogger
 from control_agent.prompts import SYS_PROMPT
 from control_agent.tools.control_tool import (
-    get_all_model_descriptions,
     get_model_description,
     get_fmu_names,
     simulate_tool,

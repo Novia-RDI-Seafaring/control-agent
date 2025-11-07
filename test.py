@@ -24,6 +24,7 @@ logfire.info("run test.py", project="fmu-agent")
 ########################
 # Experiments:
 # - list_model_names
+# - model_description
 # - list_iop
 # - get_metadata
 # - open_loop_step

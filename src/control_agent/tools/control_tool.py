@@ -18,7 +18,6 @@ from control_toolbox.tools.signals import (
 from control_toolbox.tools.information import (
     get_fmu_names as _get_fmu_names,
     get_model_description as _get_model_description,
-    get_all_model_descriptions as _get_all_model_descriptions,
     FMUInfo,
     FMUCollection,
 )
