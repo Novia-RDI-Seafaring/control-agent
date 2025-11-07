@@ -28,7 +28,7 @@ load_dotenv(override=True)
 default_provider = os.getenv("DEFAULT_PROVIDER", "openai")
 default_model = os.getenv("DEFAULT_MODEL", "openai:gpt-4o")
 
-if os.getenv("AZURE_OPENAI_API_KEY", os.getenv("AZURE_OPENAI_API_KEY", None)) is not None:
+if os.getenv("AZURE_OPENAI_API_KEY", os.getenv("OPENAI_API_KEY", None)) is not None:
 
     default_provider = "azure" if os.getenv("AZURE_OPENAI_API_KEY") is not None else "openai"
     match default_provider:

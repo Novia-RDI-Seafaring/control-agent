@@ -19,7 +19,7 @@ from agent.agent import create_agent
 from evals.report import render_report, save_report
 
 async def agent_runner(question: str) -> str:
-    fmi_agent = create_agent(model_name="gpt-4o")
+    fmi_agent = create_agent("gpt-4o")
     result = await fmi_agent.run(question)
     return result.output
 
