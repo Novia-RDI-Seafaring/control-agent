@@ -29,7 +29,7 @@ app = Typer()
 
 @app.command()
 def evaluate(experiment: Optional[str] = None):
-    from evals.datasets import all as datasets
+    from evals.experiments import all as datasets
     """Evaluate the agent on all datasets"""
     for key, dataset in datasets.items():
         if experiment and key != experiment: continue
