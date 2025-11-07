@@ -50,7 +50,7 @@ class ExperimentDefinitions:
     ) -> None:
         """
         Register a query with its schema and tool plan.
-        - query: a template string (use {MODEL_NAME} placeholder if needed)
+        - query: a template string
         - response_schema: any JSON-serializable schema object (dict, str, etc.)
         - expected_tool_use: dict like {"required":[...], "optional":[...]}
         """

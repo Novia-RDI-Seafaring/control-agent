@@ -39,5 +39,4 @@ package-dir = { "" = "src" }
 where = ["src"]
 
 [tool.uv.sources]
-mcp-fmi = { git = "https://github.com/Novia-RDI-Seafaring/mcp-fmi.git" }
 agent-control-toolbox = { git = "https://github.com/Novia-RDI-Seafaring/agent-control-toolbox.git" }

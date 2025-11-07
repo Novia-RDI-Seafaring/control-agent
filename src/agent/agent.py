@@ -99,10 +99,10 @@ def get_tools() -> list[Tool[Any]]:
                 takes_ctx=False),
 
             # simulation tools
-            Tool(simulate,
-                name="simulate",
-                description=simulate.__doc__,
-                takes_ctx=False),
+            # Tool(simulate,
+            #    name="simulate",
+            #    description=simulate.__doc__,
+            #    takes_ctx=False),
             Tool(simulate_step_response,
                 name="simulate_step_response",
                 description=simulate_step_response.__doc__,

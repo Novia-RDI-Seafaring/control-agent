@@ -16,7 +16,7 @@ logfire.instrument_pydantic_ai()
 
 logfire.info("run test.py", project="fmu-agent")
 
-QUERY_NAME = "closed_loop_step"
+QUERY_NAME = "ultimate_gain"
 
 # construct query
 query = experiment_definitions.construct_query(QUERY_NAME)
