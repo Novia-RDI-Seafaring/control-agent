@@ -25,6 +25,7 @@ dependencies = [
 
 [project.scripts]
 ecc26 = "mcp_fmi_ecc26.cli:app"
+eval = "evals.run:app"
 
 [build-system]
 requires = ["setuptools>=61.0"]
