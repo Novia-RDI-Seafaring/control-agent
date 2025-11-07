@@ -63,7 +63,7 @@ dataset = Dataset[str, float, Any](
     cases=[
         Case(
             name='divide_a_by_b',
-            inputs="Please list all the FMU models in the system",
+            inputs="Divide A by B",
             expected_output=0.5,
             metadata={},
             evaluators=(

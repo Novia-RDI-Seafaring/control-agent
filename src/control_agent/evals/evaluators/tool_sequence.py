@@ -30,7 +30,7 @@ class ToolSequenceEvaluator(Evaluator[object, object, object]):
         for tool in self.tool_call_sequence:
             if tool not in called_tools: uncalled.append(tool)
                 
-        if len(uncalled) > 0:
+        if uncalled != []:
             logger.error(f"These tools were not called: {','.join(uncalled)}")
             return EvaluationReason(value=False, reason=f"These tools were not called: {','.join(uncalled)}")
 
@@ -40,7 +40,7 @@ class ToolSequenceEvaluator(Evaluator[object, object, object]):
             if tool in called_tools[i2:]:
                 i2 += 1
             else:
-                logger.error(f"These tools were not called: {uncalled}")
+                logger.error(f"The tools were not called in the correct order: {tool} was not called after {called_tools[i2]}")
                 return EvaluationReason(value=False, reason=f"The tool {tool} was not called in the correct order")
 
         logger.info(f"All tools were called in the correct order")
