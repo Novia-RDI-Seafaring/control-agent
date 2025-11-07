@@ -5,30 +5,26 @@ description = "Experiment method and results for MCP-FMI  ECC26 paper."
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "agent-control-toolbox>=0.1.0",
+    "dash>=3.2.0",
     "fastapi>=0.120.1",
     "fmpy>=0.3.26",
     "logfire>=4.14.2",
     "matplotlib>=3.10.7",
     "numpy>=2.3.3",
+    "plotly>=6.3.1",
     "pydantic>=2.12.0",
-    "pydantic-ai>=1.10.0",
-    "pydantic-ai-slim[ag-ui,fastmcp,mcp,openai]>=1.10.0",
+    "pydantic-ai>=1.7.0",
+    "pydantic-ai-slim[ag-ui,fastmcp,mcp,openai]>=1.7.0",
     "pytest>=8.4.2",
     "python-fasthtml>=0.12.31",
     "scipy>=1.16.2",
     "typer>=0.12.0",
-    "uuid>=1.30",
-    "logfire>=4.14.2",
-    "pydantic-ai-examples>=1.10.0",
     "uvicorn>=0.38.0",
 ]
 
 [project.scripts]
 ecc26 = "mcp_fmi_ecc26.cli:app"
-agent-cli = "agent.cli:main"
-agent-dashboard = "agent.dashboard:main"
-eval = "mcp_fmi_ecc26.evals.run:app"
-demo-eval = "mcp_fmi_ecc26.evals.demo:run_demo"
 
 [build-system]
 requires = ["setuptools>=61.0"]
@@ -41,5 +37,5 @@ package-dir = { "" = "src" }
 where = ["src"]
 
 [tool.uv.sources]
-mcp-fmi = { git = "https://github.com/Novia-RDI-Seafaring/mcp-fmi.git", branch = "dev"}
-
+mcp-fmi = { git = "https://github.com/Novia-RDI-Seafaring/mcp-fmi.git" }
+agent-control-toolbox = { git = "https://github.com/Novia-RDI-Seafaring/agent-control-toolbox.git" }

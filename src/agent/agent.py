@@ -1,0 +1,106 @@
+import os
+from typing import List, Optional, Dict, Any
+from dotenv import load_dotenv
+
+from pydantic_ai import Agent, Tool, ModelSettings
+from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.providers.azure import AzureProvider
+from httpx import AsyncClient
+
+from prompts import SYS_PROMPT
+from tools.control_tool import (
+    get_all_model_descriptions,
+    get_model_description,
+    get_fmu_names,
+    simulate_tool,
+    generate_step_tool,
+    find_peaks_tool,
+    analyse_step_response,
+    zn_pid_tuning,
+)
+
+
+# Load environment variables
+load_dotenv(override=True)
+
+# System prompt with tuning method documentation
+SYSTEM_PROMPT = SYS_PROMPT
+
+def create_agent(
+    model_name: Optional[str] = None,
+    max_retries: int = 1,
+):
+    """Create FMI agent with tools.
+    
+    Args:
+        model_name: Azure OpenAI deployment name
+        temperature: LLM temperature
+        verbose: Enable verbose logging
+        max_iterations: Maximum iterations (not used by pydantic_ai directly)
+        max_retries: Maximum retries for tool calls
+    Returns:
+        Configured pydantic_ai Agent
+    """
+    # Get Azure OpenAI configuration
+    endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
+    api_key = os.getenv("AZURE_OPENAI_API_KEY")
+    deployment = model_name or os.getenv("AZURE_OPENAI_DEPLOYMENT")
+    api_version = os.getenv("AZURE_OPENAI_API_VERSION", "2024-02-01")
+    
+    CLIENT = AsyncClient()
+    MODEL = OpenAIChatModel(
+        deployment,
+        provider=AzureProvider(
+            azure_endpoint=endpoint,
+            api_key=api_key,
+            api_version=api_version,
+            http_client=CLIENT,
+        ),
+    )
+    
+    TOOLS = [
+        #Tool(get_all_model_descriptions,
+        #    name="get_all_model_descriptions",
+        #    description=get_all_model_descriptions.__doc__,
+        #    takes_ctx=False),
+        Tool(get_model_description,
+            name="get_model_description",
+            description=get_model_description.__doc__,
+            takes_ctx=False),
+        Tool(get_fmu_names,
+            name="get_fmu_names",
+            description=get_fmu_names.__doc__,
+            takes_ctx=False),
+        Tool(simulate_tool,
+            name="simulate_fmu",  # expose the desired tool name
+            description=simulate_tool.__doc__,
+            takes_ctx=False),
+        Tool(generate_step_tool,
+            name="generate_step",
+            description=generate_step_tool.__doc__,
+            takes_ctx=False),
+        Tool(find_peaks_tool,
+             name="find_peak",
+             description=find_peaks_tool.__doc__,
+             takes_ctx=False),
+        Tool(analyse_step_response,
+            name="analyse_step_response",
+            description=analyse_step_response.__doc__,
+            max_retries=3, 
+            takes_ctx=False),
+        Tool(zn_pid_tuning,
+            name="zn_pid_tuning",
+            description=zn_pid_tuning.__doc__,
+            takes_ctx=False),
+    ]
+    
+    # Create agent with tools
+    fmi_agent = Agent(
+        model=MODEL,
+        instructions=SYS_PROMPT,
+        name="FMIAgent",
+        tools=TOOLS,
+        retries=max_retries,
+    )
+    
+    return fmi_agent
