@@ -1,7 +1,7 @@
 import typer
-from mcp_fmi_ecc26.sys import FOPDT
-from mcp_fmi_ecc26 import ZieglerNicholsMethod
-from mcp_fmi_ecc26.lam import LambdaTuningMethod
+from control_agent.sys import FOPDT
+from control_agent import ZieglerNicholsMethod
+from control_agent.lam import LambdaTuningMethod
 
 app = typer.Typer()
 

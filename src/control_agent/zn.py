@@ -2,7 +2,7 @@ from ftplib import parse229
 from pydantic import BaseModel, Field, field_validator
 import numpy as np
 from scipy.optimize import root_scalar
-from mcp_fmi_ecc26.sys import FOPDT, ControllerPI
+from control_agent.sys import FOPDT, ControllerPI
 
 ZN_PROCEDURE = """
 ## Ziegler-Nichols Closed-Loop (Ultimate Gain) Method

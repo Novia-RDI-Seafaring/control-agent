@@ -1,4 +1,4 @@
-from agent.agent import create_agent
+from control_agent.agent.agent import create_agent
 from .types import ExperimentInputType, ExperimentOutputType
 
 agent_name = "FMIAgentModelList"

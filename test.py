@@ -3,7 +3,7 @@
 import asyncio
 import os
 from dotenv import load_dotenv
-from agent.agent import create_agent
+from control_agent.agent.agent import create_agent
 # import logfire
 
 load_dotenv()

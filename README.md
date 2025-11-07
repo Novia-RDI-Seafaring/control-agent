@@ -41,7 +41,7 @@ uv run ecc26 --help
 
 #### Ziegler-Nichols Method
 ```python
-from mcp_fmi_ecc26 import FOPDT, ZieglerNicholsMethod
+from control_agent import FOPDT, ZieglerNicholsMethod
 
 # Create FOPDT system
 system = FOPDT(K=2.0, T=1.0, L=0.5)
@@ -55,8 +55,8 @@ print(f"PI Controller: {zn_method.pi_controller}")
 
 #### Lambda-Tuning Method
 ```python
-from mcp_fmi_ecc26 import FOPDT
-from mcp_fmi_ecc26.lam import LambdaTuningMethod
+from control_agent import FOPDT
+from control_agent.lam import LambdaTuningMethod
 
 # Create FOPDT system
 system = FOPDT(K=2.0, T=1.0, L=0.5)

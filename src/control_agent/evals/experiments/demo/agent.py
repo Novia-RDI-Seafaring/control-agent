@@ -1,5 +1,5 @@
 from pydantic_ai import Agent
-from evals.experiments.demo.world import world
+from control_agent.evals.experiments.demo.world import world
 
 agent_name  = "world_explorer"
 # Agent configuration

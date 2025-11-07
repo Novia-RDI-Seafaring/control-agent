@@ -668,6 +668,51 @@ wheels = [
 ]
 
 [[package]]
+name = "control-agent"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "agent-control-toolbox" },
+    { name = "dash" },
+    { name = "fastapi" },
+    { name = "fmpy" },
+    { name = "logfire" },
+    { name = "matplotlib" },
+    { name = "numpy" },
+    { name = "plotly" },
+    { name = "pydantic" },
+    { name = "pydantic-ai" },
+    { name = "pydantic-ai-examples" },
+    { name = "pydantic-ai-slim", extra = ["ag-ui", "fastmcp", "mcp", "openai"] },
+    { name = "pytest" },
+    { name = "python-fasthtml" },
+    { name = "scipy" },
+    { name = "typer" },
+    { name = "uvicorn" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "agent-control-toolbox", git = "https://github.com/Novia-RDI-Seafaring/agent-control-toolbox.git" },
+    { name = "dash", specifier = ">=3.2.0" },
+    { name = "fastapi", specifier = ">=0.120.1" },
+    { name = "fmpy", specifier = ">=0.3.26" },
+    { name = "logfire", specifier = ">=4.14.2" },
+    { name = "matplotlib", specifier = ">=3.10.7" },
+    { name = "numpy", specifier = ">=2.3.3" },
+    { name = "plotly", specifier = ">=6.3.1" },
+    { name = "pydantic", specifier = ">=2.12.0" },
+    { name = "pydantic-ai", specifier = ">=1.7.0" },
+    { name = "pydantic-ai-examples", specifier = ">=1.7.0" },
+    { name = "pydantic-ai-slim", extras = ["ag-ui", "fastmcp", "mcp", "openai"], specifier = ">=1.7.0" },
+    { name = "pytest", specifier = ">=8.4.2" },
+    { name = "python-fasthtml", specifier = ">=0.12.31" },
+    { name = "scipy", specifier = ">=1.16.2" },
+    { name = "typer", specifier = ">=0.12.0" },
+    { name = "uvicorn", specifier = ">=0.38.0" },
+]
+
+[[package]]
 name = "cryptography"
 version = "46.0.3"
 source = { registry = "https://pypi.org/simple" }
@@ -2088,51 +2133,6 @@ wheels = [
 cli = [
     { name = "python-dotenv" },
     { name = "typer" },
-]
-
-[[package]]
-name = "mcp-fmi-ecc26"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "agent-control-toolbox" },
-    { name = "dash" },
-    { name = "fastapi" },
-    { name = "fmpy" },
-    { name = "logfire" },
-    { name = "matplotlib" },
-    { name = "numpy" },
-    { name = "plotly" },
-    { name = "pydantic" },
-    { name = "pydantic-ai" },
-    { name = "pydantic-ai-examples" },
-    { name = "pydantic-ai-slim", extra = ["ag-ui", "fastmcp", "mcp", "openai"] },
-    { name = "pytest" },
-    { name = "python-fasthtml" },
-    { name = "scipy" },
-    { name = "typer" },
-    { name = "uvicorn" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "agent-control-toolbox", git = "https://github.com/Novia-RDI-Seafaring/agent-control-toolbox.git" },
-    { name = "dash", specifier = ">=3.2.0" },
-    { name = "fastapi", specifier = ">=0.120.1" },
-    { name = "fmpy", specifier = ">=0.3.26" },
-    { name = "logfire", specifier = ">=4.14.2" },
-    { name = "matplotlib", specifier = ">=3.10.7" },
-    { name = "numpy", specifier = ">=2.3.3" },
-    { name = "plotly", specifier = ">=6.3.1" },
-    { name = "pydantic", specifier = ">=2.12.0" },
-    { name = "pydantic-ai", specifier = ">=1.7.0" },
-    { name = "pydantic-ai-examples", specifier = ">=1.7.0" },
-    { name = "pydantic-ai-slim", extras = ["ag-ui", "fastmcp", "mcp", "openai"], specifier = ">=1.7.0" },
-    { name = "pytest", specifier = ">=8.4.2" },
-    { name = "python-fasthtml", specifier = ">=0.12.31" },
-    { name = "scipy", specifier = ">=1.16.2" },
-    { name = "typer", specifier = ">=0.12.0" },
-    { name = "uvicorn", specifier = ">=0.38.0" },
 ]
 
 [[package]]

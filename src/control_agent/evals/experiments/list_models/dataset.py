@@ -3,7 +3,7 @@ from .types import ExperimentInputType, ExperimentOutputType, ExperimentMetadata
 from .agent import agent_name
 from .custom_evaluators import ListModels_Evaluator
 from pydantic_evals.evaluators import LLMJudge
-from evals.evaluators import Yaysayer
+from control_agent.evals.evaluators import Yaysayer
 from pydantic_ai_examples.evals.custom_evaluators import AgentCalledTool
 
 dataset = Dataset[ExperimentInputType, ExperimentOutputType, ExperimentMetadataType](

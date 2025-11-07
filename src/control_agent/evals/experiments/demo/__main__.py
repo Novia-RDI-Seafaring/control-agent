@@ -1,6 +1,6 @@
-from evals.experiments.demo.dataset import dataset
-from evals.experiments.demo.agent import agent
-from evals.report import render_report
+from control_agent.evals.experiments.demo.dataset import dataset
+from control_agent.evals.experiments.demo.agent import agent
+from control_agent.evals.report import render_report
 
 async def answer_question(question: str) -> str:
     result = await agent.run(question)

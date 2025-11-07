@@ -7,7 +7,7 @@ from pydantic_ai import Agent
 from pathlib import Path
 from pydantic_evals.reporting import EvaluationReport
 from pydantic_evals import Case, Dataset
-from agent.agent import (AgentDepsT, OutputDataT, create_agent)
+from control_agent.agent.agent import (AgentDepsT, OutputDataT, create_agent)
 # Load environment variables
 load_dotenv()
 
@@ -16,8 +16,8 @@ logfire.configure(token=os.getenv('LOGFIRE_WRITE_TOKEN'), send_to_logfire=False)
 logfire.instrument_pydantic_ai()
 logfire.instrument_openai()
 
-from evals.report import render_report, save_report
-from evals.dataset_types import dataset_types
+from control_agent.evals.report import render_report, save_report
+from control_agent.evals.dataset_types import dataset_types
 
 
 from typer import Typer
@@ -27,7 +27,7 @@ app = Typer()
 
 @app.command()
 def evaluate(experiment: Optional[str] = None):
-    from evals.experiments import all as experiments
+    from control_agent.evals.experiments import all as experiments
     """Evaluate the agent on all datasets"""
     for key, (dataset, agent) in experiments.items():
         if experiment and key != experiment: continue

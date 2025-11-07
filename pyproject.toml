@@ -1,7 +1,7 @@
 [project]
-name = "mcp_fmi_ecc26"
+name = "control_agent"
 version = "0.1.0"
-description = "Experiment method and results for MCP-FMI  ECC26 paper."
+description = "Experiment method and results for ECC26 paper."
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
@@ -25,8 +25,8 @@ dependencies = [
 ]
 
 [project.scripts]
-ecc26 = "mcp_fmi_ecc26.cli:app"
-eval = "evals.run:app"
+ecc26 = "control_agent.cli:app"
+eval = "control_agent.evals.run:app"
 
 [build-system]
 requires = ["setuptools>=61.0"]

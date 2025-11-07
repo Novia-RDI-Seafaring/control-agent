@@ -17,7 +17,7 @@ logfire.configure(token=os.getenv('LOGFIRE_WRITE_TOKEN'), send_to_logfire=False)
 logfire.instrument_pydantic_ai()
 logfire.instrument_openai()
 
-from mcp_fmi_ecc26.agent.tools import simulate_fmu_tool, annotate_simulation_tool, load_result_tool
+from control_agent.agent.tools import simulate_fmu_tool, annotate_simulation_tool, load_result_tool
 import os
 
 
@@ -27,7 +27,7 @@ def run_simulation() -> str:
     """Run the simulation tool on the FMU named PI_FOPDT.fmu"""
     return simulate_fmu_tool("PI_FOPDT.fmu")
 
-#from mcp_fmi_ecc26.sys import FOPDT, ControllerPI
+#from control_agent.sys import FOPDT, ControllerPI
 
 Method = Literal["zn", "lam"]
 ## output_type=ControllerPI,
@@ -56,7 +56,7 @@ app = Typer()
 
 @app.command()
 def evaluate(experiment: Optional[str] = None):
-    from evals.datasets import all as datasets
+    from control_agent.evals.datasets import all as datasets
     """Evaluate the agent on all datasets"""
     for key, dataset in datasets.items():
         if experiment and key != experiment: continue
