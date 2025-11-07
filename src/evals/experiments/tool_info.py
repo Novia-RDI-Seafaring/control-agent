@@ -4,6 +4,7 @@ from typing import Any
 from pydantic_evals import Case, Dataset
 from pydantic_evals.evaluators import Contains, IsInstance
 from pydantic_ai_examples.evals.custom_evaluators import AgentCalledTool
+from pydantic_evals.evaluators import LLMJudge
 
 input_type = str
 from typing import List
@@ -14,15 +15,18 @@ dataset = Dataset["str", "str", Any](
     cases=[
         Case(
             name='get_model_info',
-            inputs="Cah you run the simulation tool? on the FMU named PI_FOPDT.fmu",
+            inputs="Can you get model info for PI_FOPDT_2.fmu",
             metadata={
                 'focus': 'tool use ',
-                'description': 'Tests if the agent is able to use the simulation tool'
+                'description': 'Tests if the agent is able to get moedl indo'
             },
             evaluators=(
-                IsInstance(type_name='str'),
-                Contains(value="id", case_sensitive=False),
-                AgentCalledTool(agent_name='simulation_agent', tool_name='run_simulation_tool'),
+                AgentCalledTool(agent_name='FMIAgent', tool_name='get_model_description'),
+                LLMJudge(
+                    rubric='The agent should return an answer that shows we saw the model description.',
+                    include_input=True,
+                    model='openai:gpt-4o',
+                ),
             ),
         ),
     ],

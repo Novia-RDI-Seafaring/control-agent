@@ -15,6 +15,7 @@ dependencies = [
     "plotly>=6.3.1",
     "pydantic>=2.12.0",
     "pydantic-ai>=1.7.0",
+    "pydantic-ai-examples>=1.7.0",
     "pydantic-ai-slim[ag-ui,fastmcp,mcp,openai]>=1.7.0",
     "pytest>=8.4.2",
     "python-fasthtml>=0.12.31",
