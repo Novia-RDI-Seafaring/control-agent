@@ -1,5 +1,5 @@
 import os
-from typing import Literal, Union, Any
+from typing import Literal, Union, Any, TypeVar, Type
 from dotenv import load_dotenv
 
 from pydantic_ai import Agent, Tool
@@ -102,21 +102,22 @@ def get_tools() -> list[Tool[Any]]:
             description=zn_pid_tuning.__doc__,
             takes_ctx=False),
     ]
+from pydantic_ai._run_context import AgentDepsT, RunContext
+from pydantic_ai.output import OutputDataT
 
-def add_tools(agent: Agent, tools: list[Tool[Any]]) -> Agent:
-    for tool in tools:
-        agent.tool(tool) #type: ignore
-    return agent
 
-def supply_agent(agent: Agent):
-    tools = get_tools()
-    add_tools(agent, tools)
-    return agent
+
+def instructions_func(ctx: RunContext[AgentDepsT]) -> str:
+    return SYSTEM_PROMPT
+
 
 def create_agent(
     model: Model | KnownModelName | str = get_default_model(),
     max_retries: int = 1,
-):
+    name: str = "FMIAgent",
+    input_type: Type[AgentDepsT] = str,
+    output_type: Type[OutputDataT] = str,
+) -> Agent[AgentDepsT, OutputDataT]:
     """Create FMI agent with tools.
     
     Args:
@@ -128,15 +129,13 @@ def create_agent(
     Returns:
         Configured pydantic_ai Agent
     """
-    
-    
+
     # Create agent with tools
-    fmi_agent = Agent(
+    return Agent[AgentDepsT, OutputDataT]( # type: ignore
         model=model,
-        instructions=SYS_PROMPT,
-        name="FMIAgent",
-        tools=get_tools(),
+        instructions=SYSTEM_PROMPT,
+        name=name,
         retries=max_retries,
+        tools=get_tools()
     )
-    
-    return fmi_agent
+
