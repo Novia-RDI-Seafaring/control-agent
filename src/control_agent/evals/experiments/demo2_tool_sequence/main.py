@@ -10,6 +10,8 @@ import logfire
 
 logfire.configure(token=os.getenv('LOGFIRE_WRITE_TOKEN'), send_to_logfire=False)
 logfire.instrument_pydantic_ai()
+from control_agent.evals.report import render_report
+
 
 class ToolRunnerOutput(BaseModel):
     result: float
@@ -70,6 +72,18 @@ dataset = Dataset[str, float, Any](
                 ToolSequenceEvaluator(agent_name='tool_runner', tool_call_sequence=['get_a', 'get_b', 'wonky_divide']),
             ),
         ),
+        Case(
+            name='add_a_to_be_and_miltiply_with_3',
+            inputs="Add A to B and muliplty with 3",
+            expected_output=9.0,
+            metadata={},
+            evaluators=(
+                ToolSequenceEvaluator(
+                    agent_name='tool_runner',
+                    tool_call_sequence=['get_a', 'get_b', 'wonky_multiply']
+                ),
+            ),
+        ),        
     ],
 )
 
@@ -78,4 +92,5 @@ async def agent_runner(input: str) -> float:
 
 if __name__ == "__main__":
     report = dataset.evaluate_sync(agent_runner)
-    print(report)
+    print(report.render(include_reasons=True))
+    render_report(report, 'demo2_tool_sequence')
