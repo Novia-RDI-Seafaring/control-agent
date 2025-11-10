@@ -24,14 +24,15 @@ def render_report(report: EvaluationReport, key:str):
                 
 def save_report(key:str, report: EvaluationReport):
     path = Path("data/reports")
-    path.mkdir(parents=True, exist_ok=True) 
+    if not path.exists():
+        path.mkdir(parents=True, exist_ok=True)
 
     # Use Pydantic adapter instead of asdict
     report_dict = EvaluationReportAdapter.dump_python(report)
     
     with open(path / f"{key}-{int(time())}.json", "w") as f:
         json.dump(report_dict, f, indent=4, default=str)
-        print(report)
+        
     print(f"Wrote {key} report to {path / f'{key}-{int(time())}.json'}")
     
 

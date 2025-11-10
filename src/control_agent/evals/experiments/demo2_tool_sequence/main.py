@@ -95,9 +95,9 @@ dataset = Dataset[str, float, Any](
             ),
         ),
         Case(
-            name='add_a_to_be_and_miltiply_with_a',
-            inputs="Add A to B and multiply with A",
-            expected_output=0.5,
+            name='add_a_to_be_and_multiply_with_a',
+            inputs="Add A to B and multiply with 3",
+            expected_output=9.0,
             metadata={},
             evaluators=(
                 ToolSequenceEvaluator(
@@ -109,7 +109,7 @@ dataset = Dataset[str, float, Any](
         Case(
             name='add_a_and_b',
             inputs="Add A and B",
-            expected_output=3.0044773,
+            expected_output=3.0,
             metadata={},
             evaluators=(
                 ToolSequenceEvaluator(
@@ -121,7 +121,7 @@ dataset = Dataset[str, float, Any](
         Case(
             name='subtract_b_from_a',
             inputs="Subtract B from A",
-            expected_output=-1.0042373,
+            expected_output=-1.0,
             metadata={},
             evaluators=(
                 ToolSequenceEvaluator(
@@ -153,22 +153,27 @@ if __name__ == "__main__":
     #save_report(report, 'demo2_tool_sequence')
     
     # Option 1: Use console_table() for more control
-    console = Console()
-    table = report.console_table(
+    # console = Console()
+    # table = report.console_table(
+    #    include_reasons=True,
+    #    include_input=True,
+    #    include_expected_output=True,
+    #    include_output=True,
+    #)
+    #console.print(table)
+    
+    # Option 2: Use print() method (simpler)
+    report.print(
         include_reasons=True,
         include_input=True,
         include_expected_output=True,
         include_output=True,
     )
-    console.print(table)
-    
-    # Option 2: Use print() method (simpler)
-    # report.print(include_reasons=True)
     
     # Option 3: Render failures table if any
     if report.failures:
         failures_table = report.failures_table()
-        console.print(failures_table, style='red')
+        #console.print(failures_table, style='red')
     
     render_report(report, 'demo2_tool_sequence')
     
