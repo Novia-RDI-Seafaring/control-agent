@@ -10,12 +10,8 @@ logger = getLogger(__name__)
 # Load environment variables
 load_dotenv(override=True)
 
-default_provider = os.getenv("DEFAULT_PROVIDER", "openai")
-default_model = os.getenv("DEFAULT_MODEL", "openai:gpt-4o")
-
-default_provider = "azure"
-# default_model = "novia-gpt-5-nano"
-default_model = None
+default_provider = os.getenv("DEFAULT_PROVIDER", None)
+default_model = os.getenv("DEFAULT_MODEL", None)
 
 if os.getenv("AZURE_OPENAI_API_KEY", os.getenv("OPENAI_API_KEY", None)) is not None:
 
@@ -42,9 +38,9 @@ else:
             - AZURE_OPENAI_API_KEY (the API key of the Azure OpenAI service)
             - OPENAI_API_VERSION (this is used by the AzureProvider class to set the API version)
     """)
-assert default_provider is not None, "No default provider configured"
+assert default_provider is not None, "No default provider configured, set one with the DEFAULT_PROVIDER env variable"
 assert default_provider in ['azure', 'deepseek', 'cerebras', 'fireworks', 'github', 'grok', 'heroku', 'moonshotai', 'ollama', 'openai', 'openai-chat', 'openrouter', 'together', 'vercel', 'litellm', 'nebius', 'ovhcloud', 'gateway'], f"Default provider must be a Provider or a string: {type(default_provider)}, {default_provider}"
-assert default_model is not None, "No default model configured"
+assert default_model is not None, "No default model configured, set one with the DEFAULT_MODEL env variable"
 
 def get_default_model(model_name: str = default_model, provider: Provider[AsyncOpenAI] | Literal['azure', 'deepseek', 'cerebras', 'fireworks', 'github', 'grok', 'heroku', 'moonshotai', 'ollama', 'openai', 'openai-chat', 'openrouter', 'together', 'vercel', 'litellm', 'nebius', 'ovhcloud', 'gateway'] = default_provider) -> OpenAIChatModel:
     global default_provider, default_model
