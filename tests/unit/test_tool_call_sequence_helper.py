@@ -1,5 +1,5 @@
 import pytest
-from control_agent.evals.evaluators.tool_sequence import check_list_item_sequence
+from control_agent.evals.utils import check_list_item_sequence
 
 
 def test_correct_order_returns_true():
