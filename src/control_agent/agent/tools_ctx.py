@@ -43,7 +43,11 @@ def resolve_response(ctx: RunContext[TypedStore], stored_model: StoredModel) -> 
 
         in teh data there are signals, 
     """
-    return stored_model.resolve(ctx.deps) # type: ignore
+    try:
+        return stored_model.resolve(ctx.deps) # type: ignore
+    except Exception as e:
+        print(f"Error resolving response: {e}")
+        raise e
 
 def simulate_step_response(ctx: RunContext[TypedStore],
         sim_props: SimulationProps,
@@ -69,12 +73,15 @@ def simulate_step_response(ctx: RunContext[TypedStore],
     the ResponseModel which can be resolved from the StoredModel, has the following fields:
     
     """
-
-    result = _simulate_step_response(sim_props, step_props, FMU_DIR, generate_plot)
-    assert ctx.deps is not None, ctx
-
-    stored_model = StoredModel.store(ctx.deps, result, kind="ResponseModel")
-    return stored_model
+    try:
+        result = _simulate_step_response(sim_props, step_props, FMU_DIR, generate_plot)
+        assert ctx.deps is not None, ctx
+ 
+        stored_model = StoredModel.store(ctx.deps, result, kind="ResponseModel")
+        return stored_model
+    except Exception as e:
+        print(f"Error simulating step response: {e}")
+        raise e
 
 
 def identify_fopdt_from_step(ctx: RunContext[TypedStore],
@@ -115,10 +122,14 @@ def find_inflection_point(ctx: RunContext[TypedStore],
     **Purpose:**  
     Find the inflection point of a step response.
     """
-    response = stored_model.resolve(ctx.deps)
-    data:DataModel = response.data
-    result = _find_inflection_point(data, props)
-    return StoredModel.store(ctx.deps, result, kind="ResponseModel")
+    try:    
+        response = stored_model.resolve(ctx.deps)
+        data:DataModel = response.data
+        result = _find_inflection_point(data, props)
+        return StoredModel.store(ctx.deps, result, kind="ResponseModel")
+    except Exception as e:
+        print(f"Error finding inflection point: {e}")
+        raise e
 
 
 def find_characteristic_points(ctx: RunContext[TypedStore],
@@ -142,10 +153,15 @@ def find_characteristic_points(ctx: RunContext[TypedStore],
             - p90 = (t90,y90) point when output first reachest 90% of total change.
             - p98 = (t98,y98) point when output first reachest 98% of total change.
     """
-    response = stored_model.resolve(ctx.deps)
-    data:DataModel = response.data
-    result = _find_characteristic_points(data)
-    return StoredModel.store(ctx.deps, result, kind="ResponseModel")
+    try:
+        response = stored_model.resolve(ctx.deps)
+        data:DataModel = response.data
+        assert data is not None, "there is no data in the stored model"
+        result = _find_characteristic_points(data)
+        return StoredModel.store(ctx.deps, result, kind="ResponseModel")
+    except Exception as e:
+        print(f"Error finding characteristic points: {e}")
+        raise e
 
 
 def find_peaks(ctx: RunContext[TypedStore],
@@ -164,10 +180,14 @@ def find_peaks(ctx: RunContext[TypedStore],
             - peak_indices: List[int] = List of indices of the peaks.
             - peak_values: List[float] = List of values of the peaks.
     """
-    response = stored_model.resolve(ctx.deps)
-    data:DataModel = response.data
-    result = _find_peaks(data, props)
-    return StoredModel.store(ctx.deps, result, kind="ResponseModel")
+    try:
+        response = stored_model.resolve(ctx.deps)
+        data:DataModel = response.data
+        result = _find_peaks(data, props)
+        return StoredModel.store(ctx.deps, result, kind="ResponseModel")
+    except Exception as e:
+        print(f"Error finding peaks: {e}")
+        raise e
 
 def find_settling_time(ctx: RunContext[TypedStore],
         stored_model: StoredModel[ResponseModel],
@@ -188,10 +208,14 @@ def find_settling_time(ctx: RunContext[TypedStore],
         ResponseModel: Contains **settling time** analyzing step rsponses and finetuning controllers.
             - settling_time: float = Settling time of the signal.
     """
-    response = stored_model.resolve(ctx.deps)
-    data:DataModel = response.data
-    result = _find_settling_time(data, props)
-    return StoredModel.store(ctx.deps, result, kind="ResponseModel")
+    try:
+        response = stored_model.resolve(ctx.deps)
+        data:DataModel = response.data
+        result = _find_settling_time(data, props)
+        return StoredModel.store(ctx.deps, result, kind="ResponseModel")
+    except Exception as e:
+        print(f"Error finding settling time: {e}")
+        raise e
 
 # Build the tool list with stored I/O
 def get_tools() -> list[Tool[Any]]:

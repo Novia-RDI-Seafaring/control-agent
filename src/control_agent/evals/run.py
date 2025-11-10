@@ -69,13 +69,7 @@ def print_report(report: EvaluationReport, title: str, note:str|None = None) -> 
     console.print(f"{'='*80}")
     if note:
         console.print(f"Note: {note}")
-
     
-
-    if report.failures:
-        console.print(f"\n[red]Failures: {len(report.failures)}[/red]")
-        for failure in report.failures:
-            console.print(f"\n[red]✗ {failure.name}[/red]")
 
     for case in report.cases:
         console.print(f"\nCase: {case.name}")
