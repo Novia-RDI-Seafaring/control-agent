@@ -102,15 +102,15 @@ class ExperimentDefinitions:
 ########################################################
 # REGISTER QUERIES
 ########################################################
-experiment_definitions = ExperimentDefinitions(model_name="PI_FOPDT_2")
-experiment_definitions.model_name = "PI_FOPDT_2"
+experiment_definitions = ExperimentDefinitions(model_name="PI_FOPDT_3")
+experiment_definitions.model_name = "PI_FOPDT_3"
 
 #1) list_model_names
 experiment_definitions.register_query(
     query_name="list_model_names",
     query="List available FMU models.",
     response_schema=ListModelNamesResponse,
-    expected_output=ListModelNamesResponse(model_names=["PI_FOPDT_2"]),
+    expected_output=ListModelNamesResponse(model_names=["PI_FOPDT_3"]),
     expected_tool_use=define_tool_use(
         required=[ToolUse(name="get_fmu_names", max_runs=1)],
         optional=[]
@@ -168,7 +168,7 @@ experiment_definitions.register_query(
 #6) system_identification
 experiment_definitions.register_query(
     query_name="system_identification",
-    query="Simulate an open-loop step response and identify the static gain (K), time constant (T), and dead time (L) using tangent method. Use output_interval 0.5 second and maximum simulation time 10 seconds.",
+    query="Simulate an open-loop step response and identify the static gain (K), time constant (T), and dead time (L). Use output_interval 0.1 second and maximum simulation time 10 seconds.",
     response_schema=SystemIdentificationResponse,
     expected_output=SystemIdentificationResponse(method="tangent", parameters=SystemParameters(K=1, T=2, L=1)),
     expected_tool_use=define_tool_use(required=[ToolUse(name="simulate_step_response", max_runs=1), ToolUse(name="identify_fopdt_from_step", max_runs=1)], optional=[ToolUse(name="get_fmu_names"), ToolUse(name="get_model_description")])
