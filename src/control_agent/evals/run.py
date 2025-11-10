@@ -17,7 +17,6 @@ logfire.instrument_pydantic_ai()
 logfire.instrument_openai()
 
 from control_agent.evals.report import render_report, save_report
-from control_agent.evals.dataset_types import dataset_types
 
 
 from typer import Typer
