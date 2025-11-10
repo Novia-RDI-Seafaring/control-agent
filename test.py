@@ -5,7 +5,7 @@ import os
 from dotenv import load_dotenv
 from control_agent.agent.agent import create_agent
 from control_agent.experiment_definitions.definitions import experiment_definitions
-import logfire
+# import logfire
 
 load_dotenv()
 
@@ -14,10 +14,10 @@ fmu_path = (Path(__file__).resolve().parent / "models" / "fmus").resolve()
 set_fmu_dir(fmu_path)
 
 # logging
-logfire.configure()                 # read .logfire/ or env vars (token, project)
-logfire.instrument_pydantic_ai() 
+# logfire.configure()                 # read .logfire/ or env vars (token, project)
+# logfire.instrument_pydantic_ai() 
 
-logfire.info("run test.py", project="fmu-agent")
+# logfire.info("run test.py", project="fmu-agent")
 
 ########################
 # SET EXPERIMENT
@@ -34,7 +34,7 @@ logfire.info("run test.py", project="fmu-agent")
 # - lambda_tuning
 # - z_n
 experiment_definitions.model_name = "PI_FOPDT_2"
-query = experiment_definitions.construct_query("closed_loop_step")
+query = experiment_definitions.construct_query("open_loop_step")
 
 async def main():
     """Test the FMI agent."""

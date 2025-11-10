@@ -1,10 +1,11 @@
-from pydantic_evals.reporting import EvaluationReport, ReportCase, EvaluationResult
+from pydantic_evals.reporting import EvaluationReport, EvaluationReportAdapter, ReportCase, EvaluationResult
 from typing import Dict, Any
 from devtools import debug
 from time import time
 from pathlib import Path
 import json
 
+from dataclasses import asdict
 
 def render_report(report: EvaluationReport, key:str):
     print(f"============={report.name}=============\n\n")
@@ -25,13 +26,14 @@ def save_report(key:str, report: EvaluationReport):
     path = Path("data/reports")
     path.mkdir(parents=True, exist_ok=True) 
 
+    # Use Pydantic adapter instead of asdict
+    report_dict = EvaluationReportAdapter.dump_python(report)
     
-    report_dict = asdict(report)
-    with open(path / f"{key}-{time.time()}.json", "w") as f:
+    with open(path / f"{key}-{int(time())}.json", "w") as f:
         json.dump(report_dict, f, indent=4, default=str)
         print(report)
-    print(f"Wrote {key} report to {path / f'{key}.json'}")
-
+    print(f"Wrote {key} report to {path / f'{key}-{int(time())}.json'}")
+    
 
 def test_render():
     pass
