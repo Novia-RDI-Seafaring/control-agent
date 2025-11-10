@@ -8,4 +8,4 @@ class EqualsExpectedWithReason(EqualsExpected):
         print(ctx.expected_output)
         return EvaluationReason(
             value=ctx.output == ctx.expected_output,
-            reason=f"Expected {ctx.expected_output} but got {ctx.output}")
+            reason=f"Expected {ctx.expected_output}, got {ctx.output}")

@@ -97,10 +97,14 @@ def identify_fopdt_from_step(ctx: RunContext[TypedStore],
 
     Note the signal name for input is "u" and the signal name for output is "y"
     """
-    response = stored_model.resolve(ctx.deps)
-    data:DataModel = response.data
-    result = _identify_fopdt_from_step(data, identification_props)
-    return StoredModel.store(ctx.deps, result, kind="ResponseModel")
+    try:
+        response = stored_model.resolve(ctx.deps)
+        data:DataModel = response.data
+        result = _identify_fopdt_from_step(data, identification_props)
+        return StoredModel.store(ctx.deps, result, kind="ResponseModel")
+    except Exception as e:
+        print(f"Error identifying FOPDT from step: {e}")
+        raise e
 
 
 def find_inflection_point(ctx: RunContext[TypedStore],
