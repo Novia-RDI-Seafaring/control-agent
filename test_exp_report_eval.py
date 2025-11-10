@@ -37,10 +37,12 @@ async def main():
     
     # Create cases for all registered queries
     cases = []
+    i = 0
     for query_name in query_names:
         query = experiment_definitions.construct_query(query_name)
+        response_model = experiment_definitions.get_response_schema(query_name)
         cases.append(
-            Case(
+            Case[str, response_model, Any](
                 name=query_name,
                 inputs=query,
                 expected_output=None,  # No expected yet output for simple test

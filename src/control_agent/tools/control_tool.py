@@ -139,7 +139,7 @@ def make_dash_layout(inputs: DataModel, outputs: DataModel, port: int = 8051) ->
 def get_all_model_descriptions() -> FMUCollection:
     """Lists all FMU models in the directory and their information."""
     FMU_DIR = get_fmu_dir()
-    result = _get_all_model_descriptions(FMU_DIR)
+    result = _get_model_description(FMU_DIR)
     # Convert ResponseModel to FMUCollection
     if isinstance(result.payload, list):
         fmus_dict = {fmu.name: fmu for fmu in result.payload}
@@ -191,16 +191,17 @@ def simulate_tool(sim: SimulationModel) -> DataModel:
     fmu_path = FMU_DIR / f"{sim.fmu_name}.fmu"
     if not fmu_path.is_file():
         raise FileNotFoundError(f"FMU not found: {fmu_path}")
-
+    
+    
     # Convert to control_toolbox SimulationProps
     sim_props = SimulationProps(
         fmu_name=sim.fmu_name,
         start_time=sim.start_time,
         stop_time=sim.stop_time,
-        step_size=sim.step_size,
+        step_size=sim.step_size, # sim.step_size,
         input=sim.input,
         output=sim.output,
-        output_interval=sim.output_interval,
+        output_interval=sim.output_interval, # sim.output_interval,
         start_values=sim.start_values,
     )
 

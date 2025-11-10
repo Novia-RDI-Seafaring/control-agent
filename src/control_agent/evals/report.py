@@ -18,7 +18,7 @@ def render_report(report: EvaluationReport, key:str):
         print("Assertions:")
         for name, assertion in case.assertions.items():
             print("\t", "✅" if assertion.value else "❌", assertion.name, ":", assertion.reason[:40] + "..." if len(str(assertion.reason)) > 40 else assertion.reason)    
-        #print("Output: ", case.output)
+        print("Output: ", case.output)
         print("\n")
 
                 
