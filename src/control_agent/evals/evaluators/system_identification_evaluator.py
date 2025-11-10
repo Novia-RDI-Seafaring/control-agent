@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import Dict, Any
-
+from control_agent.experiment_definitions.response_schema import SystemIdentificationResponse, SystemParameters
 from pydantic_evals.evaluators import (
     Evaluator,
     EvaluatorContext,
@@ -13,33 +13,21 @@ logger = getLogger(__name__)
 
 
 @dataclass
-class SystemIdentificationEvaluator(Evaluator[object, object, object]):
+class SystemIdentificationEvaluator(Evaluator[object, SystemIdentificationResponse, object]):
     """Evaluate system identification results against ground truth FOPDT parameters"""
     ground_truth_K: float
     ground_truth_T: float
     ground_truth_L: float
     tolerance: float = 0.05  # 5% tolerance
     
-    def evaluate(self, ctx: EvaluatorContext[object, object, object]) -> EvaluationReason:
+    def evaluate(self, ctx: EvaluatorContext[object, SystemIdentificationResponse, object]) -> EvaluationReason:
         """Compare identified parameters with ground truth"""
-        output = ctx.output
-        
-        # Parse output - handle different formats
-        if isinstance(output, dict):
-            # Try different possible structures
-            params = output.get('parameters', {})
-            if not params:
-                params = output  # Maybe output is the parameters directly
-            
-            K = params.get('K')
-            T = params.get('T')
-            L = params.get('L')
-        else:
-            logger.error(f"Could not parse output: {type(output)}")
-            return EvaluationReason(value=False, reason=f"Could not parse output: expected dict, got {type(output)}")
-        
-        if K is None or T is None or L is None:
-            return EvaluationReason(value=False, reason="Missing parameters: K, T, or L not found in output")
+        output: SystemIdentificationResponse = ctx.output
+        system_parameters: SystemParameters = output.parameters
+
+        K = system_parameters.K
+        T = system_parameters.T
+        L = system_parameters.L
         
         # Calculate relative errors
         k_error = abs(K - self.ground_truth_K) / self.ground_truth_K if self.ground_truth_K != 0 else abs(K - self.ground_truth_K)

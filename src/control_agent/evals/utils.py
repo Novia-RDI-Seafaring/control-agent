@@ -30,6 +30,24 @@ def get_called_tools(ctx: EvaluatorContext[object, object, object], agent_name: 
     return called_tools
 
 
+def get_tool_call_counts(ctx: EvaluatorContext[object, object, object], agent_name: str) -> Dict[str, int]:
+    """
+    Count how many times each tool was called by an agent.
+    
+    Args:
+        ctx: Evaluation context with span tree
+        agent_name: Name of the agent to extract tools from
+        
+    Returns:
+        Dictionary mapping tool names to their call counts
+    """
+    called_tools = get_called_tools(ctx, agent_name)
+    counts: Dict[str, int] = {}
+    for tool in called_tools:
+        counts[tool] = counts.get(tool, 0) + 1
+    return counts
+
+
 def check_list_item_sequence(list_to_check: List[str], expected_sequence: List[str]) -> bool:
     """
     Check if list_to_check contains all items from expected_sequence in the correct order.

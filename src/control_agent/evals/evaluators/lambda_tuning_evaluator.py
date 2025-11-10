@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-
+from control_agent.experiment_definitions.response_schema import LambdaTuningResponse
 from pydantic_evals.evaluators import (
     Evaluator,
     EvaluatorContext,
@@ -15,42 +15,18 @@ logger = getLogger(__name__)
 @dataclass
 class LambdaTuningEvaluator(Evaluator[object, object, object]):
     """Evaluate lambda tuning results against ground truth"""
-    ground_truth_K: float
-    ground_truth_T: float
-    ground_truth_L: float
-    lambda_value: float
     tolerance: float = 0.05  # 5% tolerance
     
-    def evaluate(self, ctx: EvaluatorContext[object, object, object]) -> EvaluationReason:
+    def evaluate(self, ctx: EvaluatorContext[object, LambdaTuningResponse, object]) -> EvaluationReason:
         """Compare lambda tuning results with ground truth"""
         # Calculate ground truth using the same library
-        system = FOPDT(
-            K=self.ground_truth_K,
-            T=self.ground_truth_T,
-            L=self.ground_truth_L
-        )
-        lam_method = LambdaTuningMethod(system, lam=self.lambda_value)
+        output: LambdaTuningResponse = ctx.output
+        system = output.system_parameters
+        lam_method = LambdaTuningMethod(FOPDT(K=system.K, T=system.T, L=system.L), lam=output.lambda_parameter)
         ground_truth_Kp = lam_method.pi_controller.K_p
         ground_truth_Ti = lam_method.pi_controller.T_i
-        
-        # Parse agent output
-        output = ctx.output
-        if isinstance(output, dict):
-            # Try different possible structures
-            controller = output.get('controller_parameters', {})
-            if not controller:
-                controller = output.get('pid_parameters', {})
-            if not controller:
-                controller = output  # Maybe output is the controller directly
-            
-            Kp = controller.get('Kp') or controller.get('K_p')
-            Ti = controller.get('Ti') or controller.get('T_i')
-        else:
-            logger.error(f"Could not parse output: {type(output)}")
-            return EvaluationReason(value=False, reason=f"Could not parse output: expected dict, got {type(output)}")
-        
-        if Kp is None or Ti is None:
-            return EvaluationReason(value=False, reason="Missing controller parameters: Kp or Ti not found in output")
+        Kp = output.controller_parameters.Kp
+        Ti = output.controller_parameters.Ti
         
         # Calculate relative errors
         kp_error = abs(Kp - ground_truth_Kp) / ground_truth_Kp if ground_truth_Kp != 0 else abs(Kp - ground_truth_Kp)
@@ -60,7 +36,7 @@ class LambdaTuningEvaluator(Evaluator[object, object, object]):
         if kp_error <= self.tolerance and ti_error <= self.tolerance:
             return EvaluationReason(
                 value=True,
-                reason=f"Controller parameters match ground truth (Kp={Kp:.3f}, Ti={Ti:.3f}, λ={self.lambda_value:.3f})"
+                reason=f"Controller parameters match ground truth (Kp={Kp:.3f}, Ti={Ti:.3f}, λ={output.lambda_parameter:.3f})"
             )
         else:
             return EvaluationReason(
