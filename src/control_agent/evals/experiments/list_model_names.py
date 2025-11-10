@@ -12,7 +12,7 @@ dataset = Dataset[str, ListModelNamesResponse, Any](
             inputs="Please list all the FMU models in the system",
             expected_output=ListModelNamesResponse(model_names=["PI_FOPDT_2"]),
             evaluators=(
-                EqualsExpected(),
+                EqualsExpectedWithReason(),
                 RequiredToolUseEvaluator(
                     required_tools=[
                         ToolUseSpec(name="get_fmu_names", max_runs=1)

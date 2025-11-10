@@ -37,6 +37,19 @@ preferred_order = [
 ]
 
 
+
+def get_normal_agent_runner(output_model: Type[OutputDataT]) -> Callable[[str], Coroutine[Any, Any, OutputDataT]]:
+    agent = create_agent(
+        model=get_default_model(),
+        tools=get_tools(),
+        deps=TypedStore.__class__,
+        output_type=output_model,
+    )
+    def runner(input: str) -> OutputDataT:
+        result = agent.run_sync(input, output_type=output_model, deps=TypedStore()) # type: ignore
+        return result.output # type: ignore
+    return runner # type: ignore
+
 def get_agent_runner(output_model: Type[OutputDataT]) -> Callable[[str], Coroutine[Any, Any, OutputDataT]]:
     agent = create_agent(
         model=get_default_model(),
@@ -49,40 +62,51 @@ def get_agent_runner(output_model: Type[OutputDataT]) -> Callable[[str], Corouti
         return result.output # type: ignore
     return runner # type: ignore
 
+def print_report(report: EvaluationReport, title: str) -> None:
+    console = Console()
+    console.print(f"\n{'='*80}")
+    console.print(f"Experiment: {title}")
+    console.print(f"{'='*80}")
+    if report.failures:
+        console.print(f"\n[red]Failures: {len(report.failures)}[/red]")
+        for failure in report.failures:
+            console.print(f"\n[red]✗ {failure.name}[/red]")
 
-def run_experiment(name: str) -> None:
+    table = report.console_table(
+        include_reasons=True,
+        include_input=False,
+        include_expected_output=False,
+        include_output=True,
+    )
+    console.print("\n")
+    console.print(table)
+
+def run_experiment(name: str, pass_data_in_context: bool = False, save: bool = False) -> None:
     try:
         console = Console()
+        report2 = None
         if name == "demo":
             from control_agent.evals.experiments.demo import agent_runner as runner, dataset as dataset # type: ignore
+            report = dataset.evaluate_sync(runner) # type: ignore
+            print_report(report, "Demo")
 
         else:
             dataset, OutputDataT = datasets[name] # type: ignore
-            runner = get_agent_runner(OutputDataT) # type: ignore
-            
-        report = dataset.evaluate_sync(runner) # type: ignore
-        
-        console.print(f"\n{'='*80}")
-        console.print(f"Experiment: {name}")
-        console.print(f"{'='*80}")
-        
-        if report.failures:
-            console.print(f"\n[red]Failures: {len(report.failures)}[/red]")
-            for failure in report.failures:
-                console.print(f"\n[red]✗ {failure.name}[/red]")
-                console.print(f"  [yellow]Error:[/yellow] {failure.error_message}")
-        
-        table = report.console_table(
-            include_reasons=True,
-            include_input=False,
-            include_expected_output=False,
-            include_output=True,
-        )
-        console.print("\n")
-        console.print(table)
-        
-        # Save the report
-        save_report(name, report)
+            if pass_data_in_context:
+                runner = get_normal_agent_runner(OutputDataT) # type: ignore
+                _title = f"{name} Data in Context"
+                _key = f"{name}_data_in_context"
+
+            else:
+                runner = get_agent_runner(OutputDataT) # type: ignore
+                _title = f"{name} No Data in Context"
+                _key = f"{name}"
+
+            report = dataset.evaluate_sync(runner) # type: ignore
+            print_report(report, _title)
+            # Save the report
+            if save:
+                save_report(_key, report)
         
     except Exception as e:
         console.print(f"\n[red]ERROR in experiment '{name}':[/red]")
@@ -90,13 +114,13 @@ def run_experiment(name: str) -> None:
         raise
 
 @app.command()
-def evaluate(experiment: str="all", fmu_dir: Path=Path("models/fmus")):
+def evaluate(experiment: str="all", fmu_dir: Path=Path("models/fmus"), pass_data_in_context: bool = False, save: bool = False):
     set_fmu_dir(fmu_dir)
     if experiment == "all":
        for experiment in preferred_order + [k for k in datasets.keys() if k not in preferred_order]:
-            run_experiment(experiment)
+            run_experiment(experiment, pass_data_in_context, save)
     else:
-        run_experiment(experiment)
+        run_experiment(experiment, pass_data_in_context, save)
 
 
 
