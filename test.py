@@ -7,6 +7,9 @@ from control_agent.agent.agent import create_agent
 from control_agent.experiment_definitions.definitions import experiment_definitions
 # import logfire
 
+from rich.console import Console
+from rich.table import Table
+
 load_dotenv()
 
 from control_toolbox.config import *
@@ -38,7 +41,7 @@ query = experiment_definitions.construct_query("open_loop_step")
 
 async def main():
     """Test the FMI agent."""
-    
+    console = Console()
     print("="*80)
     print("FMI Agent Test")
     print("="*80)
@@ -56,19 +59,31 @@ async def main():
         # logfire.info(f"Execute query: {query}", project="fmu-agent")
         result = await agent.run(query)
         
-        print("="*80)
-        print("RESPONSE:")
-        print("="*80)
-        print(result.output)
-        print("\n")
+        # Display result
+        table = Table(title="Agent Response")
+        table.add_column("Field", style="cyan")
+        table.add_column("Value", style="green")
+        
+        table.add_row("Output", str(result.output))
+        usage = result.usage()
+        table.add_row("Total Tokens", str(usage.total_tokens))
+        table.add_row("Request Count", str(usage.requests))
+        
+        console.print(table)
+        
+        # print("="*80)
+        # print("RESPONSE:")
+        # print("="*80)
+        # print(result.output)
+        # print("\n")
         
         # Show tool usage
-        print("="*80)
-        print("USAGE:")
-        print("="*80)
-        usage = result.usage()
-        print(f"  Total tokens: {usage.total_tokens}")
-        print(f"  Request count: {usage.requests}")
+        # print("="*80)
+        # print("USAGE:")
+        # print("="*80)
+        # usage = result.usage()
+        # print(f"  Total tokens: {usage.total_tokens}")
+        # print(f"  Request count: {usage.requests}")
         
         print("\n")
         print("="*80)
