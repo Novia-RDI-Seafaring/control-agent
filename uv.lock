@@ -17,7 +17,7 @@ wheels = [
 [[package]]
 name = "agent-control-toolbox"
 version = "0.1.0"
-source = { git = "https://github.com/Novia-RDI-Seafaring/agent-control-toolbox.git#f0e58bd9be79890ea335f62743efb05870de75c5" }
+source = { git = "https://github.com/Novia-RDI-Seafaring/agent-control-toolbox.git#5f6d02690f77c348b2e94d81bbb42410019a0df3" }
 dependencies = [
     { name = "fmpy" },
     { name = "numpy" },

@@ -13,6 +13,7 @@ from control_agent.experiment_definitions.response_schema import (
     ZNResponse,
     TuningOvershootResponse
 )
+from control_agent.experiment_definitions.response_schema import SystemParameters
 
 class ToolUse(BaseModel):
     name: str
@@ -31,6 +32,7 @@ class ExperimentDefinitions:
         self.queries: Dict[str, str] = {}
         self.response_schema: Dict[str, Any] = {}
         self.expected_tool_use: Dict[str, Dict[str, Any]] = {}
+        self.expected_output: Dict[str, Any] = {}
 
     # --- internals ---
     def _render(self, text: str) -> str:
@@ -46,6 +48,7 @@ class ExperimentDefinitions:
         query_name: str,
         query: str,
         response_schema: Any,
+        expected_output: Any,
         expected_tool_use: Dict[str, Any],
     ) -> None:
         """
@@ -53,11 +56,12 @@ class ExperimentDefinitions:
         - query: a template string
         - response_schema: any JSON-serializable schema object (dict, str, etc.)
         - expected_tool_use: dict like {"required":[...], "optional":[...]}
+        - expected_output: any JSON-serializable output object
         """
         self.queries[query_name] = query
         self.response_schema[query_name] = response_schema
         self.expected_tool_use[query_name] = expected_tool_use
-
+        self.expected_output[query_name] = expected_output
     def construct_query(self, query_name: str) -> str:
         """
         Produce a printable block with the rendered query and its response schema.
@@ -81,6 +85,10 @@ class ExperimentDefinitions:
         self._ensure_exists(query_name)
         return self.expected_tool_use[query_name]
 
+    def get_expected_output(self, query_name: str) -> Any:
+        self._ensure_exists(query_name)
+        return self.expected_output[query_name]
+
     def list_queries(self) -> Dict[str, str]:
         """Return all query names with rendered text."""
         return {k: self._render(v) for k, v in self.queries.items()}
@@ -102,6 +110,7 @@ experiment_definitions.register_query(
     query_name="list_model_names",
     query="List available FMU models.",
     response_schema=ListModelNamesResponse,
+    expected_output=ListModelNamesResponse(model_names=["PI_FOPDT_2"]),
     expected_tool_use=define_tool_use(
         required=[ToolUse(name="get_fmu_names", max_runs=1)],
         optional=[]
@@ -113,6 +122,7 @@ experiment_definitions.register_query(
     query_name="list_iop",
     query="List the inputs, outputs, and parameters of the model.",
     response_schema=ListIOPResponse,
+    expected_output=None,
     expected_tool_use=define_tool_use(
         required=[ToolUse(name="get_model_description", max_runs=1)],
         optional=[ToolUse(name="get_fmu_names")]
@@ -124,6 +134,7 @@ experiment_definitions.register_query(
     query_name="get_metadata",
     query="Get the metadata of the model.",
     response_schema=GetMetadataResponse,
+    expected_output=None,
     expected_tool_use=define_tool_use(
         required=[ToolUse(name="get_model_description", max_runs=1)],
         optional=[ToolUse(name="get_fmu_names")]
@@ -135,6 +146,7 @@ experiment_definitions.register_query(
     query_name="open_loop_step",
     query="Simulate an open-loop step response with input change from 0 to 1. Use output_interval 0.5 second and maximum simulation time 30 seconds.",
     response_schema=StepResponse,
+    expected_output=None,
     expected_tool_use=define_tool_use(
         required=[ToolUse(name="simulate_step_response", max_runs=1)],
         optional=[ToolUse(name="get_fmu_names"), ToolUse(name="get_model_description")]
@@ -146,6 +158,7 @@ experiment_definitions.register_query(
     query_name="closed_loop_step",
     query="Simulate a closed-loop step response with input change from 0 to 1. Use output_interval 0.5 second and maximum simulation time 30 seconds.",
     response_schema=StepResponse,
+    expected_output=None,
     expected_tool_use=define_tool_use(
         required=[ToolUse(name="simulate_step_response", max_runs=1)],
         optional=[ToolUse(name="get_fmu_names"), ToolUse(name="get_model_description")]
@@ -155,15 +168,10 @@ experiment_definitions.register_query(
 #6) system_identification
 experiment_definitions.register_query(
     query_name="system_identification",
-    query="Simulate an open-loop step response and identify the static gain (K), time constant (T), and dead time (L). Use output_interval 1 second and maximum simulation time 30 seconds.",
+    query="Simulate an open-loop step response and identify the static gain (K), time constant (T), and dead time (L) using tangent method. Use output_interval 0.5 second and maximum simulation time 10 seconds.",
     response_schema=SystemIdentificationResponse,
-    expected_tool_use=define_tool_use(
-        required=[
-            ToolUse(name="simulate_step_response", max_runs=1),
-            ToolUse(name="identify_fopdt_from_step", max_runs=1)
-        ],
-        optional=[ToolUse(name="get_fmu_names"), ToolUse(name="get_model_description")]
-    )
+    expected_output=SystemIdentificationResponse(method="tangent", parameters=SystemParameters(K=1, T=2, L=1)),
+    expected_tool_use=define_tool_use(required=[ToolUse(name="simulate_step_response", max_runs=1), ToolUse(name="identify_fopdt_from_step", max_runs=1)], optional=[ToolUse(name="get_fmu_names"), ToolUse(name="get_model_description")])
 )
 
 #7) ultimate_gain
@@ -171,6 +179,7 @@ experiment_definitions.register_query(
     query_name="ultimate_gain",
     query="Perform closed-loop experimentes to determine the ultimate gain (Ku) and ultimate period (Pu). Use output_interval 0.1 second and maximum simulation time 10 seconds.",
     response_schema=UltimateGainResponse,
+    expected_output=None,
     expected_tool_use=define_tool_use(
         required=[
             ToolUse(name="simulate_step_response", max_runs=10),
@@ -185,6 +194,7 @@ experiment_definitions.register_query(
     query_name="lambda_tuning",
     query="Tune the PI controller using λ-tuning for a balanced response.",
     response_schema=LambdaTuningResponse,
+    expected_output=None,
     expected_tool_use=define_tool_use(
         required=[
             ToolUse(name="simulate_step_response", max_runs=1),
@@ -200,6 +210,7 @@ experiment_definitions.register_query(
     query_name="z_n",
     query="Tune the PI controller using Ziegler-Nichols closed-loop method.",
     response_schema=ZNResponse,
+    expected_output=None,
     expected_tool_use=define_tool_use(
         required=[
             ToolUse(name="simulate_step_response", max_runs=10),
@@ -215,6 +226,7 @@ experiment_definitions.register_query(
     query_name="tuning_overshoot",
     query="Tune the PI controller to have approximately 10 percentage overshoot and rise time less than 2 seconds.",
     response_schema=TuningOvershootResponse,
+    expected_output=None,
     expected_tool_use=define_tool_use(
         required=[
             ToolUse(name="simulate_step_response", max_runs=10),
@@ -231,6 +243,7 @@ experiment_definitions.register_query(
     query_name="model_description",
     query="Get the model description.",
     response_schema=ModelDescription,
+    expected_output=None,
     expected_tool_use=define_tool_use(
         required=[
             ToolUse(name="get_model_description"),
