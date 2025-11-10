@@ -11,7 +11,6 @@ dataset = Dataset[str, LambdaTuningResponse, Any](
             inputs="Tune the PI controller using λ-tuning for a balanced response.",
             expected_output=None,
             evaluators=(
-                EqualsExpected(),
                 RequiredToolUseEvaluator(
                     required_tools=[
                         ToolUseSpec(name="simulate_step_response", max_runs=1),
@@ -26,6 +25,7 @@ dataset = Dataset[str, LambdaTuningResponse, Any](
                 ToolSequenceEvaluator(
                     tool_call_sequence=["simulate_step_response", "identify_fopdt_from_step", "pid_lambda_tuning"]
                 ),
+                LambdaTuningEvaluator(tolerance=0.05)
             ),
         ),
     ],

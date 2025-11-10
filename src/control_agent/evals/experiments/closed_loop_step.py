@@ -12,7 +12,6 @@ dataset = Dataset[str, StepResponse, Any](
             inputs="Simulate a closed-loop step response with input change from 0 to 1. Use output_interval 0.5 second and maximum simulation time 30 seconds.",
             expected_output=None,
             evaluators=(
-                EqualsExpected(),
                 RequiredToolUseEvaluator(
                     required_tools=[
                         ToolUseSpec(name="simulate_step_response", max_runs=1)

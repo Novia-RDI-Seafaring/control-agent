@@ -12,7 +12,6 @@ dataset = Dataset[str, GetMetadataResponse, Any](
             inputs="Get the metadata of the model.",
             expected_output=None,
             evaluators=(
-                EqualsExpected(),
                 RequiredToolUseEvaluator(
                     required_tools=[
                         ToolUseSpec(name="get_model_description", max_runs=1)
