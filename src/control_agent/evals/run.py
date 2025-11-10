@@ -10,7 +10,7 @@ load_dotenv(override=True)
 
 import logfire
 logfire.configure(token=os.getenv('LOGFIRE_WRITE_TOKEN'), send_to_logfire=False)
-#logfire.instrument_pydantic_ai()
+logfire.instrument_pydantic_ai()
 
 from control_agent.agent.agent import get_tools, OutputDataT, create_agent
 from control_agent.agent.model import get_default_model
