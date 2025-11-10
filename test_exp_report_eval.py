@@ -19,9 +19,13 @@ experiment_definitions.model_name = "PI_FOPDT_2"
 
 async def agent_runner(input: str, output_schema: Any) -> Any:
     """Run the agent with the given input and output schema."""
-    agent = create_agent(max_retries=3, output_type=output_schema)
-    result = await agent.run(input)
-    return result.output
+    agent = create_agent(max_retries=5, output_type=output_schema)
+    try:
+        # Add timeout to prevent hanging
+        result = await asyncio.wait_for(agent.run(input), timeout=600) 
+        return result.output
+    except asyncio.TimeoutError:
+        raise TimeoutError("Agent execution timed out after 5 minutes")
 
 
 async def main():
@@ -30,7 +34,8 @@ async def main():
     console = Console()
     
     # Run all experiments, each with its own response schema
-    for name in [query_names[3]]:
+    for name in [query_names[5]]:
+        console.print(f"\n[yellow]Starting experiment: {name}[/yellow]")
         query = experiment_definitions.construct_query(name)
         response_model = experiment_definitions.get_response_schema(name)
         
@@ -53,7 +58,9 @@ async def main():
             return await agent_runner(input=input, output_schema=schema)
         
         try:
-            report = await dataset.evaluate(task_for_experiment, task_name=name)
+            console.print(f"[yellow]Evaluating experiment: {name}...[/yellow]")
+            report = await dataset.evaluate(task_for_experiment, task_name=name, progress=True)
+            console.print(f"[green]Evaluation completed for: {name}[/green]")
             
             console.print(f"\n{'='*80}")
             console.print(f"Experiment: {name}")

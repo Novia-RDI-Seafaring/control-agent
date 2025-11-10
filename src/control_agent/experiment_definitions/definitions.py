@@ -133,7 +133,7 @@ experiment_definitions.register_query(
 #4) open_loop_step
 experiment_definitions.register_query(
     query_name="open_loop_step",
-    query="Simulate an open-loop step response with input change from 0 to 1.",
+    query="Simulate an open-loop step response with input change from 0 to 1. Use output_interval 0.5 second and maximum simulation time 30 seconds.",
     response_schema=StepResponse,
     expected_tool_use=define_tool_use(
         required=[ToolUse(name="simulate_step_response", max_runs=1)],
@@ -144,7 +144,7 @@ experiment_definitions.register_query(
 #5) closed_loop_step
 experiment_definitions.register_query(
     query_name="closed_loop_step",
-    query="Simulate a closed-loop step response with input change from 0 to 1",
+    query="Simulate a closed-loop step response with input change from 0 to 1. Use output_interval 0.5 second and maximum simulation time 30 seconds.",
     response_schema=StepResponse,
     expected_tool_use=define_tool_use(
         required=[ToolUse(name="simulate_step_response", max_runs=1)],
@@ -155,7 +155,7 @@ experiment_definitions.register_query(
 #6) system_identification
 experiment_definitions.register_query(
     query_name="system_identification",
-    query="Simulate an open-loop step response and identify the static gain (K), time constant (T), and dead time (L).",
+    query="Simulate an open-loop step response and identify the static gain (K), time constant (T), and dead time (L). Use output_interval 1 second and maximum simulation time 30 seconds.",
     response_schema=SystemIdentificationResponse,
     expected_tool_use=define_tool_use(
         required=[
@@ -169,7 +169,7 @@ experiment_definitions.register_query(
 #7) ultimate_gain
 experiment_definitions.register_query(
     query_name="ultimate_gain",
-    query="Perform closed-loop experimentes to determine the ultimate gain (Ku) and ultimate period (Pu).",
+    query="Perform closed-loop experimentes to determine the ultimate gain (Ku) and ultimate period (Pu). Use output_interval 0.1 second and maximum simulation time 10 seconds.",
     response_schema=UltimateGainResponse,
     expected_tool_use=define_tool_use(
         required=[
