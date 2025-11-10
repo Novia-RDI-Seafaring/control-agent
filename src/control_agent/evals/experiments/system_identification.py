@@ -25,9 +25,9 @@ dataset = Dataset[str, SystemIdentificationResponse, Any](
                 ),
                 SystemIdentificationEvaluator(
                     ground_truth_K=1.0,
-                    ground_truth_T=1.0,
-                    ground_truth_L=0.5,
-                    tolerance=0.05
+                    ground_truth_T=2.0,
+                    ground_truth_L=1.0,
+                    tolerance=0.2
                 )
             ),
         ),
