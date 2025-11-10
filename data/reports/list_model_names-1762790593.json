@@ -1,0 +1,32 @@
+{
+    "name": "list_model_names",
+    "cases": [
+        {
+            "name": "list_model_names",
+            "inputs": "\n        MODEL: PI_FOPDT_2\n\n        QUERY: List available FMU models.\n        ",
+            "metadata": {
+                "model_name": "PI_FOPDT_2",
+                "query_name": "list_model_names"
+            },
+            "expected_output": null,
+            "output": {
+                "model_names": [
+                    "PI_FOPDT_2"
+                ]
+            },
+            "metrics": {},
+            "attributes": {},
+            "scores": {},
+            "labels": {},
+            "assertions": {},
+            "task_duration": 15.985527899931185,
+            "total_duration": 16.250305891036987,
+            "trace_id": "00000000000000000000000000000000",
+            "span_id": "0000000000000000",
+            "evaluator_failures": []
+        }
+    ],
+    "failures": [],
+    "trace_id": "00000000000000000000000000000000",
+    "span_id": "0000000000000000"
+}
