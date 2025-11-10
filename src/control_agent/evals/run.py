@@ -78,7 +78,12 @@ def evaluate(experiment: str="all", fmu_dir: Optional[Path]=Path("models/fmus"))
     if fmu_dir is not None:
         from control_toolbox.config import set_fmu_dir
         set_fmu_dir(fmu_dir)
-    run_experiment(experiment)
+    if experiment == "all":
+        for name in experiments:
+            run_experiment(name)
+    else:
+        run_experiment(experiment)
+
 
 
 
