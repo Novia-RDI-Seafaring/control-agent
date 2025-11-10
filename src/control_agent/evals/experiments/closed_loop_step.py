@@ -22,6 +22,7 @@ dataset = Dataset[str, StepResponse, Any](
                         ToolUseSpec(name="get_model_description", max_runs=1)
                     ]
                 ),
+                StepResponseEvaluator()
             ),
         ),
     ],
