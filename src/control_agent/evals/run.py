@@ -11,8 +11,9 @@ load_dotenv(override=True)
 import logfire
 logfire.configure(token=os.getenv('LOGFIRE_WRITE_TOKEN'), send_to_logfire=False)
 logfire.instrument_pydantic_ai()
-
+from control_agent.agent.stored_model import TypedStore
 from control_agent.agent.agent import get_tools, OutputDataT, create_agent
+from control_agent.agent.tools_ctx import get_tools as get_tools_ctx
 from control_agent.agent.model import get_default_model
 from control_agent.evals.report import save_report
 from control_agent.evals.experiments import datasets # type: ignore
@@ -39,11 +40,12 @@ preferred_order = [
 def get_agent_runner(output_model: Type[OutputDataT]) -> Callable[[str], Coroutine[Any, Any, OutputDataT]]:
     agent = create_agent(
         model=get_default_model(),
-        tools=get_tools(),
+        tools=get_tools_ctx(),
+        deps=TypedStore.__class__,
         output_type=output_model,
     )
     def runner(input: str) -> OutputDataT:
-        result = agent.run_sync(input, output_type=output_model) # type: ignore
+        result = agent.run_sync(input, output_type=output_model, deps=TypedStore()) # type: ignore
         return result.output # type: ignore
     return runner # type: ignore
 
