@@ -16,9 +16,24 @@ from control_agent.agent.agent import get_tools, OutputDataT, create_agent
 from control_agent.agent.model import get_default_model
 from control_agent.evals.report import save_report
 from control_agent.evals.experiments import datasets # type: ignore
+from control_toolbox.config import set_fmu_dir
 
 from typer import Typer
 app = Typer()
+
+preferred_order = [
+    "list_model_names",
+    "list_iop",  # Note: dataset name is "list_iop", not "list_io"
+    "get_metadata",
+    "model_description",
+    "open_loop_step",
+    "closed_loop_step",
+    "system_identification",
+    "ultimate_gain",
+    "lambda_tuning",
+    "z_n",
+    "tuning_overshoot",
+]
 
 
 def get_agent_runner(output_model: Type[OutputDataT]) -> Callable[[str], Coroutine[Any, Any, OutputDataT]]:
@@ -73,13 +88,11 @@ def run_experiment(name: str) -> None:
         raise
 
 @app.command()
-def evaluate(experiment: str="all", fmu_dir: Optional[Path]=Path("models/fmus")):
-    if fmu_dir is not None:
-        from control_toolbox.config import set_fmu_dir
-        set_fmu_dir(fmu_dir)
+def evaluate(experiment: str="all", fmu_dir: Path=Path("models/fmus")):
+    set_fmu_dir(fmu_dir)
     if experiment == "all":
-        for name in datasets.keys():
-            run_experiment(name)
+       for experiment in preferred_order + [k for k in datasets.keys() if k not in preferred_order]:
+            run_experiment(experiment)
     else:
         run_experiment(experiment)
 

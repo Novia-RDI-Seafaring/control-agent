@@ -13,8 +13,8 @@ logger = getLogger(__name__)
 
 @dataclass
 class ToolSequenceEvaluator(Evaluator[object, object, object]):
-    agent_name: str
     tool_call_sequence: List[str]
+    agent_name: str = "FMIAgent"
 
     def evaluate(self, ctx: EvaluatorContext[object, object, object]) -> EvaluationReason:
         called_tools = get_called_tools(ctx, self.agent_name)
