@@ -22,10 +22,8 @@ def render_report(report: EvaluationReport, key:str):
 
                 
 def save_report(key:str, report: EvaluationReport):
-    return
     path = Path("data/reports")
     path.mkdir(parents=True, exist_ok=True) 
-    from dataclasses import asdict, is_dataclass
 
     
     report_dict = asdict(report)

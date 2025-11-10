@@ -10,7 +10,6 @@ import logfire
 
 logfire.configure(token=os.getenv('LOGFIRE_WRITE_TOKEN'), send_to_logfire=False)
 logfire.instrument_pydantic_ai()
-from control_agent.evals.report import render_report
 
 
 class ToolRunnerOutput(BaseModel):
@@ -91,6 +90,10 @@ async def agent_runner(input: str) -> float:
     return await agent.run(input)
 
 if __name__ == "__main__":
+    from control_agent.evals.report import render_report, save_report
+    from rich.console import Console
     report = dataset.evaluate_sync(agent_runner)
     print(report.render(include_reasons=True))
     render_report(report, 'demo2_tool_sequence')
+    #Console.print(report.console_table())
+    #save_report(report, 'demo2_tool_sequence')
