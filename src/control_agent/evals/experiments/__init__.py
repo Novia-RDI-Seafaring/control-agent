@@ -1,8 +1,5 @@
-import control_agent.evals.experiments.list_models as lm
-from pydantic_evals import Case, Dataset
-from typing import Dict, Any
+from . import *
 
-
-all = {
-    'list_models': (lm.dataset, lm.agent),
-}
+__all__ = [
+    'list_model_names',
+]

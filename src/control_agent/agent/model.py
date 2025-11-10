@@ -10,8 +10,8 @@ logger = getLogger(__name__)
 # Load environment variables
 load_dotenv(override=True)
 
-#default_provider = os.getenv("DEFAULT_PROVIDER", "openai")
-#default_model = os.getenv("DEFAULT_MODEL", "openai:gpt-4o")
+default_provider = os.getenv("DEFAULT_PROVIDER", "openai")
+default_model = os.getenv("DEFAULT_MODEL", "openai:gpt-4o")
 
 default_provider = "azure"
 # default_model = "novia-gpt-5-nano"

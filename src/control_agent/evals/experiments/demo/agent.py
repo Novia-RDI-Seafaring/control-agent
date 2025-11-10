@@ -136,3 +136,10 @@ def read_message_on_the_fridge() -> str:
         return "World not initialized."
     return world.read_fridge_message()
 
+
+
+
+
+def answer_question(question: str) -> str:
+    result = agent.run_sync(question)
+    return result.output
