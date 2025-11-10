@@ -16,13 +16,3 @@ dataset = Dataset[str, ListModelNamesResponse, Any](
         ),
     ],
 )
-
-
-if __name__ == "__main__":
-    from control_toolbox.tools.information import get_fmu_names
-    from control_toolbox.config import set_fmu_dir
-    from pathlib import Path
-    set_fmu_dir(Path( "models/fmus"))
-    
-    report = dataset.evaluate_sync(get_agent_runner(OutputDataT))
-    print(report)

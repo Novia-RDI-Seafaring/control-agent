@@ -1,4 +1,4 @@
-from . import list_model_names
+from . import *
 
 __all__ = [
     'list_model_names',
