@@ -81,7 +81,7 @@ def print_report(report: EvaluationReport, title: str) -> None:
     console.print("\n")
     console.print(table)
 
-def run_experiment(name: str, pass_data_in_context: bool = False, save: bool = False) -> None:
+def run_experiment(name: str, ctx_tools: bool = False, save: bool = False) -> None:
     try:
         console = Console()
         report2 = None
@@ -92,15 +92,15 @@ def run_experiment(name: str, pass_data_in_context: bool = False, save: bool = F
 
         else:
             dataset, OutputDataT = datasets[name] # type: ignore
-            if pass_data_in_context:
+            if not ctx_tools:
                 runner = get_normal_agent_runner(OutputDataT) # type: ignore
-                _title = f"{name} Data in Context"
-                _key = f"{name}_data_in_context"
+                _title = f"{name} Data is passed to tools via context window"
+                _key = f"{name}_data_in_context_window"
 
             else:
                 runner = get_agent_runner(OutputDataT) # type: ignore
-                _title = f"{name} No Data in Context"
-                _key = f"{name}"
+                _title = f"{name} Tools have access to data via stored model"
+                _key = f"{name}_data_in_stored_model"
 
             report = dataset.evaluate_sync(runner) # type: ignore
             print_report(report, _title)
@@ -114,13 +114,14 @@ def run_experiment(name: str, pass_data_in_context: bool = False, save: bool = F
         raise
 
 @app.command()
-def evaluate(experiment: str="all", fmu_dir: Path=Path("models/fmus"), pass_data_in_context: bool = False, save: bool = False):
+def evaluate(experiment: str="all", fmu_dir: Path=Path("models/fmus"), ctx_tools: bool  = False, save: bool = False):
     set_fmu_dir(fmu_dir)
+    
     if experiment == "all":
        for experiment in preferred_order + [k for k in datasets.keys() if k not in preferred_order]:
-            run_experiment(experiment, pass_data_in_context, save)
+            run_experiment(experiment, ctx_tools, save)
     else:
-        run_experiment(experiment, pass_data_in_context, save)
+        run_experiment(experiment, ctx_tools, save)
 
 
 
