@@ -23,6 +23,7 @@ dataset = Dataset[str, SystemIdentificationResponse, Any](
                         ToolUseSpec(name="get_model_description", max_runs=1)
                     ]
                 ),
+                SystemIdentificationEvaluator(tolerance=0.05)
             ),
         ),
     ],
