@@ -103,7 +103,7 @@ def print_report(report: EvaluationReport, title: str, note:str|None = None) -> 
 def run_experiment(name: str, ctx_tools: bool = False, save: bool = False) -> None:
     try:
         console = Console()
-        report2 = None
+        
         if name == "demo":
             from control_agent.evals.experiments.demo import agent_runner as runner, dataset as dataset # type: ignore
             report = dataset.evaluate_sync(runner) # type: ignore

@@ -1,11 +1,9 @@
 from pydantic_evals.reporting import EvaluationReport, EvaluationReportAdapter, ReportCase, EvaluationResult
 from typing import Dict, Any
-from devtools import debug
 from time import time
 from pathlib import Path
 import json
 
-from dataclasses import asdict
 
 def render_report(report: EvaluationReport, key:str):
     print(f"============={report.name}=============\n\n")
@@ -35,10 +33,3 @@ def save_report(key:str, report: EvaluationReport):
         
     print(f"Wrote {key} report to {path / f'{key}-{int(time())}.json'}")
     
-
-def test_render():
-    pass
-    
-
-if __name__ == "__main__":
-    test_render()

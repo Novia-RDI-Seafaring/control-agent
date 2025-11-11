@@ -9,10 +9,10 @@ from pydantic_evals import Case, Dataset
 from typing import Any
 from rich.console import Console
 
-import logfire
-logfire.configure()
+#import logfire
+#logfire.configure()
 
-load_dotenv()
+load_dotenv(override=True)
 
 from control_toolbox.config import *
 fmu_path = (Path(__file__).resolve().parent / "models" / "fmus").resolve()
@@ -23,7 +23,7 @@ experiment_definitions.model_name = "PI_FOPDT_3"
 async def agent_runner(input: str, output_schema: Any) -> Any:
     """Run the agent with the given input and output schema."""
     agent = create_agent(max_retries=3, output_type=output_schema)
-    logfire.instrument_pydantic_ai(agent)
+#    logfire.instrument_pydantic_ai(agent)
     try:
         # Add timeout to prevent hanging
         result = await asyncio.wait_for(agent.run(input), timeout=300) 
