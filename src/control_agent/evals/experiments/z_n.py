@@ -12,12 +12,10 @@ dataset = Dataset[str, ZNResponse, Any](
             inputs="Tune the PI controller using Ziegler-Nichols closed-loop method.",
             expected_output=None,
             evaluators=(
-                EqualsExpected(),
                 RequiredToolUseEvaluator(
-                    agent_name="FMIAgent",
                     required_tools=[
                         ToolUseSpec(name="simulate_step_response", max_runs=10),
-                        ToolUseSpec(name="find_peaks", max_runs=1),
+                        ToolUseSpec(name="find_peaks", max_runs=10),
                         ToolUseSpec(name="zn_pid_tuning", max_runs=1)
                     ],
                     optional_tools=[
@@ -25,6 +23,7 @@ dataset = Dataset[str, ZNResponse, Any](
                         ToolUseSpec(name="get_model_description", max_runs=1)
                     ]
                 ),
+                ZieglerNicholsEvaluator(tolerance=0.05),
             ),
         ),
     ],
