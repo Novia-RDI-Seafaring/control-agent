@@ -9,7 +9,7 @@ dataset = Dataset[str, SystemIdentificationResponse, Any](
     cases=[
         Case(
             name='system_identification',
-            inputs="Simulate an open-loop step response and identify the static gain (K), time constant (T), and dead time (L). Use output_interval 1 second and maximum simulation time 30 seconds.",
+            inputs="Simulate an open-loop step response. Identify a FOPDT model from the step response 'y'. Return the static gain (K), time constant (T), and dead time (L) of the identified model. Use output_interval 0.1 second and maximum simulation time 20 seconds.",
             expected_output=None,
             evaluators=(
                 EqualsExpected(),
