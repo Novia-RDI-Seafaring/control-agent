@@ -3,7 +3,7 @@
 __version__ = "0.1.0"
 
 from .agent import (AgentDepsT, OutputDataT, create_agent, get_tools, get_default_model)
-from .stored_model import TypedStore, StoredModel
+from .stored_model import StoredModel, ModelStore, get_repr_store
 
 __all__ = [
     "AgentDepsT",
@@ -11,4 +11,7 @@ __all__ = [
     "create_agent",
     "get_tools",
     "get_default_model",
+    "StoredModel",
+    "ModelStore",
+    "get_repr_store",
 ]

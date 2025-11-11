@@ -11,14 +11,16 @@ load_dotenv(override=True)
 import logfire
 logfire.configure(token=os.getenv('LOGFIRE_WRITE_TOKEN'), send_to_logfire=False)
 logfire.instrument_pydantic_ai()
-from control_agent.agent.stored_model import TypedStore
+logfire.instrument_openai()
+
+
 from control_agent.agent.agent import get_tools, OutputDataT, create_agent
 from control_agent.agent.tools_ctx import get_tools as get_tools_ctx
 from control_agent.agent.model import get_default_model
 from control_agent.evals.report import save_report
 from control_agent.evals.experiments import datasets # type: ignore
 from control_toolbox.config import set_fmu_dir
-
+from control_agent.agent.stored_model import get_repr_store, StoredModel, ModelStore
 from typer import Typer
 app = Typer()
 
@@ -42,11 +44,11 @@ def get_normal_agent_runner(output_model: Type[OutputDataT]) -> Callable[[str], 
     agent = create_agent(
         model=get_default_model(),
         tools=get_tools(),
-        deps=TypedStore.__class__,
         output_type=output_model,
+        max_retries=20,
     )
     def runner(input: str) -> OutputDataT:
-        result = agent.run_sync(input, output_type=output_model, deps=TypedStore()) # type: ignore
+        result = agent.run_sync(input, output_type=output_model) # type: ignore
         return result.output # type: ignore
     return runner # type: ignore
 
@@ -54,11 +56,13 @@ def get_agent_runner(output_model: Type[OutputDataT]) -> Callable[[str], Corouti
     agent = create_agent(
         model=get_default_model(),
         tools=get_tools_ctx(),
-        deps=TypedStore.__class__,
+        deps=ModelStore,
         output_type=output_model,
+        max_retries=20,
+
     )
     def runner(input: str) -> OutputDataT:
-        result = agent.run_sync(input, output_type=output_model, deps=TypedStore()) # type: ignore
+        result = agent.run_sync(input, output_type=output_model, deps=get_repr_store()) # type: ignore
         return result.output # type: ignore
     return runner # type: ignore
 
@@ -106,7 +110,7 @@ def run_experiment(name: str, ctx_tools: bool = False, save: bool = False) -> No
         
         if name == "demo":
             from control_agent.evals.experiments.demo import agent_runner as runner, dataset as dataset # type: ignore
-            report = dataset.evaluate_sync(runner) # type: ignore
+            report = dataset.evaluate_sync(runner, retries=20) # type: ignore
             print_report(report, "Demo", "This is a demo experiment")
             if save:
                 save_report("get_fmu_names_exp", report)
@@ -138,7 +142,7 @@ def run_experiment(name: str, ctx_tools: bool = False, save: bool = False) -> No
         raise
 
 @app.command()
-def evaluate(experiment: str="all", fmu_dir: Path=Path("models/fmus"), ctx_tools: bool  = False, save: bool = False):
+def evaluate(experiment: str="all", ctx_tools: bool  = False, save: bool = False, fmu_dir: Path=Path("models/fmus")):
     set_fmu_dir(fmu_dir)
     
     if experiment == "all":
