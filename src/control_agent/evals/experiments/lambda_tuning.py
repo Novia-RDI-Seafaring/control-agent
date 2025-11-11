@@ -8,14 +8,14 @@ dataset = Dataset[str, LambdaTuningResponse, Any](
     cases=[
         Case(
             name='lambda_tuning',
-            inputs="Tune the PI controller using λ-tuning for a balanced response.",
+            inputs="Simulate a step response. Identify a FOPDT model from the step response 'y'. Tune the PI controller using λ-tuning for a balanced response.",
             expected_output=None,
             evaluators=(
                 RequiredToolUseEvaluator(
                     required_tools=[
                         ToolUseSpec(name="simulate_step_response", max_runs=1),
                         ToolUseSpec(name="identify_fopdt_from_step", max_runs=1),
-                        ToolUseSpec(name="pid_lambda_tuning", max_runs=1)
+                        ToolUseSpec(name="lambda_tuning", max_runs=1)
                     ],
                     optional_tools=[
                         ToolUseSpec(name="get_fmu_names", max_runs=1),
@@ -23,7 +23,7 @@ dataset = Dataset[str, LambdaTuningResponse, Any](
                     ]
                 ),
                 ToolSequenceEvaluator(
-                    tool_call_sequence=["simulate_step_response", "identify_fopdt_from_step", "pid_lambda_tuning"]
+                    tool_call_sequence=["simulate_step_response", "identify_fopdt_from_step", "lambda_tuning"]
                 ),
                 LambdaTuningEvaluator(tolerance=0.05)
             ),
