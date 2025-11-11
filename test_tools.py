@@ -1,4 +1,4 @@
-from control_toolbox.tools.information import ModelDescription
+from control_toolbox.tools.information import ModelDescription, get_model_description
 from control_toolbox.tools.simulation import SimulationProps, simulate_step_response
 from control_toolbox.tools.identification import identify_fopdt_from_step, IdentificationProps, FOPDTModel
 from control_toolbox.tools.signals import generate_step, StepProps, TimeRange, generate_impulse, ImpulseProps
@@ -6,6 +6,12 @@ from control_toolbox.tools.signals import generate_step, StepProps, TimeRange, g
 from control_toolbox.config import *
 fmu_path = (Path(__file__).resolve().parent / "models" / "fmus").resolve()
 set_fmu_dir(fmu_path)
+
+import logfire
+logfire.configure()
+
+md = get_model_description("PI_FOPDT_2")
+print(md.model_dump_json(indent=2))
 
 #simulate step response
 simulation_props = SimulationProps(

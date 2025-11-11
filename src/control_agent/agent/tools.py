@@ -30,10 +30,10 @@ def get_tools() -> list[Tool[Any]]:
             takes_ctx=False),
 
         # analysis
-        Tool(find_inflection_point,
-            name="find_inflection_point",
-            description=find_inflection_point.__doc__,
-            takes_ctx=False),
+        # Tool(find_inflection_point,
+        #    name="find_inflection_point",
+        #    description=find_inflection_point.__doc__,
+        #    takes_ctx=False),
         Tool(find_characteristic_points,
             name="find_characteristic_points",
             description=find_characteristic_points.__doc__,
