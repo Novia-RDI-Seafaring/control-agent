@@ -23,7 +23,7 @@ if os.getenv("AZURE_OPENAI_API_KEY", os.getenv("OPENAI_API_KEY", None)) is not N
             assert os.getenv("OPENAI_API_VERSION") is not None, "OPENAI_API_VERSION is not set" # see the docstring in class AzureProvider
             logger.info("Using Azure OpenAI as the default provider")
             default_provider = "azure"
-            default_model = default_model or os.getenv("AZURE_OPENAI_DEPLOYMENT", default_model)
+            default_model = os.getenv("AZURE_OPENAI_DEPLOYMENT", default_model)
         case "openai":
             assert os.getenv("OPENAI_API_KEY") is not None, "OPENAI_API_KEY is not set"
             default_model = default_model

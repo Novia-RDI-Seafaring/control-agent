@@ -108,6 +108,8 @@ def run_experiment(name: str, ctx_tools: bool = False, save: bool = False) -> No
             from control_agent.evals.experiments.demo import agent_runner as runner, dataset as dataset # type: ignore
             report = dataset.evaluate_sync(runner) # type: ignore
             print_report(report, "Demo", "This is a demo experiment")
+            if save:
+                save_report("get_fmu_names_exp", report)
 
         else:
             dataset, OutputDataT = datasets[name] # type: ignore
@@ -122,10 +124,13 @@ def run_experiment(name: str, ctx_tools: bool = False, save: bool = False) -> No
                 _key = f"{name}_data_in_stored_model"
 
             report = dataset.evaluate_sync(runner) # type: ignore
+            #console.print(f"[debug] Report has {len(report.cases)} cases, {len(report.failures) if hasattr(report, 'failures') else 0} failures")
             print_report(report, name, note)
             # Save the report
             if save:
                 save_report(_key, report)
+            else:
+                console.print(f"[dim]Note: Report not saved. Use --save flag to save the report.[/dim]")
         
     except Exception as e:
         console.print(f"\n[red]ERROR in experiment '{name}':[/red]")
