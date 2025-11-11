@@ -178,7 +178,7 @@ def lambda_tuning(model: FOPDTModel,
     """
     print(f"lambda tuning with model: {model} and props: {props}")
     try:
-        response = _lambda_tuning(data, props)
+        response = _lambda_tuning(model, props)
         return response
     except Exception as e:
         logger.error(f"Error lambda tuning: {e}")
