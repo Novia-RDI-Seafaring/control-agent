@@ -1,6 +1,7 @@
 from __future__ import annotations
 import os
 import uuid
+import base64
 from typing import List, Optional, Dict, Literal, Any, Type, TypeVar, Union, Any, Callable, Generic, Dict, Optional, Tuple, Type, TypeVar, Union, get_type_hints, get_origin, get_args, Optional, Union, TypeVar, Type, Literal, Dict, Any, List, get_origin, get_args, get_type_hints
 from functools import wraps
 from inspect import signature, Parameter, Signature
@@ -11,9 +12,9 @@ from logging import getLogger
 from pathlib import Path
 
 from pydantic import BaseModel, Field
-
+from matplotlib.figure import Figure
 from ag_ui.core import EventType, StateSnapshotEvent # type: ignore
-from pydantic_ai import Agent
+from pydantic_ai import Agent, BinaryContent
 from pydantic_ai.tools import Tool # type: ignore
 from pydantic_ai.ag_ui import StateDeps
 from pydantic_ai._run_context import RunContext, AgentDepsT
@@ -23,7 +24,6 @@ from pydantic_ai.models import Model, KnownModelName
 from pydantic_ai.providers import Provider
 
 from control_toolbox.core import DataModel, AttributesGroup
-
 from control_toolbox.tools.identification import IdentificationProps, FOPDTModel
 from control_toolbox.tools.information import ModelDescription
 from control_toolbox.tools.pid_tuning import UltimateTuningProps, PIDParameters, LambdaTuningProps
@@ -55,7 +55,7 @@ import uuid
 # System prompt with tuning method docume
 __all__ = [
     # modules and global variables
-    'os', 'uuid',
+    'os', 'uuid', 'base64',
     # typing
     'List', 'Optional', 'Dict', 'Literal', 'Any', 'Type', 'TypeVar', 'Union', 'Callable', 'Generic', 'Dict', 'Optional', 'Tuple', 'Type', 'TypeVar', 'Union', 'get_type_hints', 'get_origin', 'get_args', 'Optional', 'Union', 'TypeVar', 'Type', 'Literal', 'Dict', 'Any', 'List', 'get_origin', 'get_args', 'get_type_hints',
     'wraps', 'signature', 'Parameter', 'Signature',
@@ -63,10 +63,11 @@ __all__ = [
     'load_dotenv', 'getLogger', 'Path',
     # pydantic
     'BaseModel', 'Field',
+    'Figure',
     # ag_ui
     'EventType', 'StateSnapshotEvent', 'StateDeps',
     # AI agent infrastructure
-    'Agent', 'Tool', 'StateDeps', 'RunContext', 'OpenAIChatModel', 'AgentDepsT', 'OutputDataT', 'Model', 'KnownModelName', 'Provider',
+    'Agent', 'Tool', 'StateDeps', 'RunContext', 'OpenAIChatModel', 'AgentDepsT', 'OutputDataT', 'Model', 'KnownModelName', 'Provider', 'BinaryContent',
     # control_toolbox core and tunings
     'DataModel', 'AttributesGroup',
     'InflectionPointProps', 'IdentificationProps', 'FOPDTModel', 'ModelDescription', 'UltimateTuningProps', 'PIDParameters', 'LambdaTuningProps',

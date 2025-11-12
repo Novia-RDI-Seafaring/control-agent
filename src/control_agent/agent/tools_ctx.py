@@ -22,17 +22,41 @@ def control_help(ctx: RunContext[StateDeps[SimContext]], topic:Literal["fopdt_pi
         return f"Could not read documentation file {path}: {e}"
 
 def look_at_plot(ctx: RunContext[StateDeps[SimContext]],
-        plot_type: Literal["step_response", "bode", "nyquist", "root_locus"],
-    ) -> StateSnapshotEvent|ToolExecutionError:
+        signal_name: str,
+    ) -> BinaryContent|ToolExecutionError:
     """
-    Looks at a plot of the data.
+    If you need to check a signal as an image, you can use this tool to get the raw image data of the signal you are interested in.
     """
+    import matplotlib
+    matplotlib.use('Agg') # type: ignore
+
     try:
         if len(ctx.deps.state.fmu.simulations) == 0:
             return ToolExecutionError(message="No simulations have been run yet")
     except Exception as e:
         return ToolExecutionError(message=str(e))
-    
+    try:
+        data = ctx.deps.state.fmu.simulations[-1].data
+        figures = plot_data(data)
+        try:
+            figure:Figure = figures[signal_name]
+        except Exception as e:
+            return ToolExecutionError(message=f"Signal {signal_name} not found in data")
+        try:
+            # Use an in-memory bytes buffer to capture PNG image data
+            import io
+            buf = io.BytesIO()
+            figure.savefig(buf, format='png', bbox_inches='tight', dpi=300)
+            buf.seek(0)
+            png_image: bytes = buf.read()
+            buf.close()
+            print(f"Looking at image of signal: {signal_name}")
+            return BinaryContent(data=png_image, media_type='image/png')
+        except Exception as e:
+            return ToolExecutionError(message=str(e))
+    except Exception as e:
+        return ToolExecutionError(message=str(e))
+
 
 def get_fmu_names(ctx: RunContext[StateDeps[SimContext]]) -> List[str]:
     """
@@ -440,6 +464,12 @@ def get_tools() -> list[Tool[Any]]:
             name="get_fmu_names",
             description=get_fmu_names.__doc__,
             takes_ctx=True),
+
+        Tool(look_at_plot,
+            name="look_at_signal_plot",
+            description=look_at_plot.__doc__,
+            takes_ctx=True),
+
         Tool(choose_fmu,    
             name="choose_fmu",
             description=choose_fmu.__doc__,
