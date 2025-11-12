@@ -1,10 +1,10 @@
 from control_agent.evals.common import * # type: ignore
-from control_agent.experiment_definitions.response_schema import StepResponse
+from control_agent.experiment_definitions.response_schema import StepResponse, CaseResponse
 from control_agent.evals.evaluators.required_tool_use_evaluator import RequiredToolUseEvaluator, ToolUseSpec
 
-OutputDataT = StepResponse
+OutputDataT = CaseResponse[StepResponse]
 
-dataset = Dataset[str, StepResponse, Any](
+dataset = Dataset[str, CaseResponse[StepResponse], Any](
     name='open_loop_step',
     cases=[
         Case(
@@ -12,7 +12,6 @@ dataset = Dataset[str, StepResponse, Any](
             inputs="Simulate an open-loop step response with input change from 0 to 1. Use output_interval 0.5 second and maximum simulation time 30 seconds.",
             expected_output=None,
             evaluators=(
-                EqualsExpected(),
                 RequiredToolUseEvaluator(
                     required_tools=[
                         ToolUseSpec(name="simulate_step_response", max_runs=1)

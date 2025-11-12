@@ -1,9 +1,9 @@
 from control_agent.evals.common import * # type: ignore
 from control_toolbox.tools.information import ModelDescription
-
+from control_agent.experiment_definitions.response_schema import CaseResponse
 OutputDataT = ModelDescription
 
-dataset = Dataset[str, ModelDescription, Any](
+dataset = Dataset[str, CaseResponse[ModelDescription], Any](
     name='model_description',
     cases=[
         Case(

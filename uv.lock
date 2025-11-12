@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.13"
 
 [[package]]
@@ -17,7 +17,7 @@ wheels = [
 [[package]]
 name = "agent-control-toolbox"
 version = "0.1.0"
-source = { git = "https://github.com/Novia-RDI-Seafaring/agent-control-toolbox.git#4d3bf93e1ced540ce4c11480ac6d9bacfde557c9" }
+source = { git = "https://github.com/Novia-RDI-Seafaring/agent-control-toolbox.git#9dc0faeb9d8a0b7e85ebbbd695341f54c19b8774" }
 dependencies = [
     { name = "fmpy" },
     { name = "numpy" },

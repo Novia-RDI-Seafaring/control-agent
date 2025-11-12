@@ -1,9 +1,9 @@
 from control_agent.evals.common import * # type: ignore
-from control_agent.experiment_definitions.response_schema import LambdaTuningResponse
+from control_agent.experiment_definitions.response_schema import LambdaTuningResponse, CaseResponse
 
-OutputDataT = LambdaTuningResponse
+OutputDataT = CaseResponse[LambdaTuningResponse]
 
-dataset = Dataset[str, LambdaTuningResponse, Any](
+dataset = Dataset[str, CaseResponse[LambdaTuningResponse], Any](
     name='lambda_tuning',
     cases=[
         Case(

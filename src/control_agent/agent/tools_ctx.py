@@ -1,27 +1,173 @@
 from pydantic_ai._run_context import RunContext
 
-from control_toolbox.tools.information import get_fmu_names, get_model_description
+from control_toolbox.tools.information import get_fmu_names as _get_fmu_names, get_model_description as _get_model_description, ModelDescription
 from control_toolbox.tools.simulation import simulate_step_response as _simulate_step_response, simulate as _simulate
 from control_toolbox.tools.identification import identify_fopdt_from_step as _identify_fopdt_from_step
 from control_toolbox.tools.analysis import find_inflection_point as _find_inflection_point, find_characteristic_points as _find_characteristic_points, find_peaks as _find_peaks, find_settling_time as _find_settling_time 
 from control_toolbox.tools.identification import IdentificationProps, FOPDTModel
 from control_toolbox.tools.simulation import SimulationStepResponseProps, StepProps
 from control_toolbox.tools.analysis import AttributesGroup, FindPeaksProps, InflectionPointProps, SettlingTimeProps
-from typing import Any, Union, Tuple
+
+from control_toolbox.tools.pid_tuning import PIDParameters, lambda_tuning as _lambda_tuning, LambdaTuningProps
+from control_toolbox.tools.identification import FOPDTModel
+from control_toolbox.tools.pid_tuning import UltimateTuningProps, PIDParameters, zn_pid_tuning as _zn_pid_tuning
+
+
+from typing import Any, Union, Tuple, List, Optional, Dict
 from pydantic_ai.tools import Tool
-from control_agent.agent.stored_model import StoredModel, ModelStore
 from logging import getLogger
+from pydantic_ai import Agent, Tool
+from pydantic_ai.ag_ui import StateDeps
+import uuid
+from ag_ui.core import EventType, StateSnapshotEvent
+from pathlib import Path
+
 logger = getLogger(__name__)
 from control_toolbox.core import DataModel, DataModelTeaser
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
 class SimulationResponse(BaseModel):
     repr_id: str
     data: DataModel
 
-def simulate_step_response(ctx: RunContext[ModelStore],
+
+class FOPDTCheck(BaseModel):
+    props: IdentificationProps
+    data: FOPDTModel
+
+class InflectionCheck(BaseModel):
+    signal_name: str
+    data: AttributesGroup
+
+class RiseTimeCheck(BaseModel):
+    data: AttributesGroup
+
+class PIDCheck(BaseModel):
+    data: PIDParameters
+
+class LambdaTuningCheck(BaseModel):
+    model: FOPDTModel
+    props: LambdaTuningProps
+    params: PIDParameters
+    messages: List[str]
+
+class ZNPIDTuningCheck(BaseModel):
+    props: UltimateTuningProps
+    params: PIDParameters
+    messages: List[str]
+
+class SettlingTimeCheck(BaseModel):
+    props: SettlingTimeProps
+    data: AttributesGroup
+
+class SimulationRun(BaseModel):
+    sim_props: SimulationStepResponseProps
+    step_props: StepProps
+    data: DataModel
+    fopdt_checks: List[FOPDTCheck] = Field(default_factory=list)
+    pid_checks: List[PIDCheck] = Field(default_factory=list)
+    attributes: List[AttributesGroup] = Field(default_factory=list)
+    settling_time_checks: List[SettlingTimeCheck] = Field(default_factory=list)
+
+class CharacteristicPointsCheck(BaseModel):
+    data: AttributesGroup
+
+class Analysis(BaseModel):
+    props: IdentificationProps
+    data: AttributesGroup
+
+
+class FmuContext(BaseModel):
+    fmu_name: str = "PI_FOPDT_2"
+    fmu_path: str = "models/fmus/PI_FOPDT_2.fmu"
+    model_description: Optional[ModelDescription] = Field(default=None)
+    simulations: List[SimulationRun] = Field(default_factory=list)
+    lambda_tuning_checks: List[LambdaTuningCheck] = Field(default_factory=list)
+    zn_pid_tuning_checks: List[ZNPIDTuningCheck] = Field(default_factory=list)
+
+        
+
+class SimContext(BaseModel):
+    query: str = Field(default="")
+    fmu_folder: str = Field(default="models/fmus")
+    current_fmu: Optional[str] = Field(default=None)
+    fmu_names: List[str] = Field(default_factory=list)
+    fmus: Dict[str, FmuContext] = Field(default_factory=dict)
+    notes: List[str]
+
+    @property
+    def fmu(self) -> FmuContext:
+        if self.current_fmu is None: raise ValueError("No FMU chosen")
+        if self.current_fmu not in self.fmus: raise ValueError(f"FMU {self.current_fmu} not found")
+        return self.fmus[self.current_fmu]
+    
+class ToolExecutionError(BaseModel):
+    message: str
+
+DepsType = StateDeps[SimContext]
+
+def get_fmu_names(ctx: RunContext[StateDeps[SimContext]]) -> List[str]:
+    """
+    Gets the names of the available FMUs.
+    """
+    folder = ctx.deps.state.fmu_folder
+    fmu_names = _get_fmu_names(folder)
+    ctx.deps.state.fmu_names = fmu_names.fmu_names
+    return fmu_names.fmu_names
+
+def choose_fmu(ctx: RunContext[StateDeps[SimContext]],
+        fmu_name: str,
+    ) -> StateSnapshotEvent|ToolExecutionError:
+    """
+    Chooses a FMU from the list of available FMUs.
+    """
+    if fmu_name not in ctx.deps.state.fmu_names: return ToolExecutionError(message="FMU not found")
+    try:
+        ctx.deps.state.current_fmu = fmu_name
+        if fmu_name not in ctx.deps.state.fmus:
+            ctx.deps.state.fmus[fmu_name] = FmuContext(
+                fmu_name=fmu_name,
+                fmu_path=str(Path(ctx.deps.state.fmu_folder) / f"{fmu_name}.fmu"),
+                model_description=None,
+                simulations=[],
+                lambda_tuning_checks=[],
+                zn_pid_tuning_checks=[]
+            )
+        return StateSnapshotEvent(
+        type=EventType.STATE_SNAPSHOT,
+        snapshot=ctx.deps.state,
+    )
+
+    except Exception as e:
+        print(f"Error in choose fmu: {e}")
+        return ToolExecutionError(message=str(e))
+
+def get_model_description(ctx: RunContext[StateDeps[SimContext]]) -> ToolExecutionError|StateSnapshotEvent:
+    """
+    Gets the model info for a FMU.
+    """
+    try:
+        fmu_path = ctx.deps.state.fmu.fmu_path
+    except Exception as e:
+        return ToolExecutionError(message=str(e))
+
+    try:
+        model_info = _get_model_description(fmu_path)
+        ctx.deps.state.fmu.model_description = model_info
+        return StateSnapshotEvent(
+            type=EventType.STATE_SNAPSHOT,
+            snapshot=ctx.deps.state,
+        )
+
+    except Exception as e:
+        print(f"Error in get model description: {e}")
+        return ToolExecutionError(message=str(e))
+
+
+def simulate_step_response(ctx: RunContext[StateDeps[SimContext]],
         sim_props: SimulationStepResponseProps,
         step_props: StepProps,
-    ) -> SimulationResponse:
+    ) -> StateSnapshotEvent|ToolExecutionError:
     """
     Simulates a step response with input defined in the StepProps.
 
@@ -43,39 +189,34 @@ def simulate_step_response(ctx: RunContext[ModelStore],
     - Ensure that you have set all parameters correctly in the `start_values` dictionary before simulating.
 
     """
-    print(f"simulate step response with props: {sim_props} and step props: {step_props}")
-    assert sim_props.fmu_name is not None, "FMU name is required"
-    with ctx.tracer.start_as_current_span(f"Simulating step response ({sim_props.fmu_name}, {sim_props.start_time}, {sim_props.stop_time}, {sim_props.output_interval})") as span:
-        span.set_attribute("fmu_name", sim_props.fmu_name)
-        span.set_attribute("start_time", str(sim_props.start_time))
-        span.set_attribute("stop_time", str(sim_props.stop_time))
-        span.set_attribute("output_interval", str(sim_props.output_interval))
+    try:
+        fmu_path = ctx.deps.state.fmu.fmu_path
+    except Exception as e:
+        return ToolExecutionError(message=str(e))
+    try:
+        print(f"simulate step response with props: {sim_props} and step props: {step_props}")
 
-        
-        # {sim_props} and step props: {step_props}"):
-        logger.debug(f"Simulating step response with props: {sim_props} and step props: {step_props}")
-        try:
-            span.add_event(f"will store it")
-            print("will store it")
-            from devtools import debug
-            debug(sim_props)
-            debug(step_props)
-            data = _simulate_step_response(sim_props, step_props)
-            debug(data)
-            dm = ctx.deps.convert(data)
-            span.add_event(f"stored it")
-            print("stored it")
-            debug(dm)
-            return SimulationResponse(repr_id=dm.repr_id, data=data)
-        except Exception as e:
-            logger.error(f"Error simulating step response: {e}")
-            raise e
+        data = _simulate_step_response(fmu_path, sim_props, step_props)
+        ctx.deps.state.fmu.simulations.append(SimulationRun(
+            sim_props=sim_props,
+            step_props=step_props,
+            data=data,
+            fopdt_checks=[],
+            attributes=[]
+        ))
+        return StateSnapshotEvent(
+            type=EventType.STATE_SNAPSHOT,
+            snapshot=ctx.deps.state,
+        )
+
+    except Exception as e:
+        print(f"Error in simulate step response: {e}")
+        return ToolExecutionError(message=str(e))
 
 
-def identify_fopdt_from_step(ctx: RunContext[ModelStore],
-        repr_id: str,
+def identify_fopdt_from_step(ctx: RunContext[StateDeps[SimContext]],
         props: IdentificationProps,
-    ) -> FOPDTModel:
+    ) -> StateSnapshotEvent|ToolExecutionError:
     """
     Identify a First Order Plus Dead Time (FOPDT) model from step response data without input signal.
 
@@ -93,21 +234,31 @@ def identify_fopdt_from_step(ctx: RunContext[ModelStore],
     **Usage:**
         This tool analyzes a previously simulated or measured step response and fits a FOPDT model to it.
     """
-    print(f"identify FOPDT model with repr_id: {repr_id} and props: {props}")
-    logger.debug(f"Identifying FOPDT model with props: {props}")
-    try:
-        return _identify_fopdt_from_step(
-            ctx.deps.recreate(repr_id),
-            props
-        )
-    except Exception as e:
-        logger.error(f"Error identifying FOPDT model: {e}")
-        raise e
 
-def find_inflection_point(ctx: RunContext[ModelStore],
-        repr_id: str,
+    try:
+        if len(ctx.deps.state.fmu.simulations) == 0:
+            return ToolExecutionError(message="No simulations have been run yet")
+    except Exception as e:
+        return ToolExecutionError(message=str(e))
+    try:
+        data = ctx.deps.state.fmu.simulations[-1].data
+        fopdt_check = FOPDTCheck(
+            props=props,
+            data=_identify_fopdt_from_step(data, props)
+        )
+        ctx.deps.state.fmu.simulations[-1].fopdt_checks.append(fopdt_check)
+        return StateSnapshotEvent(
+            type=EventType.STATE_SNAPSHOT,
+            snapshot=ctx.deps.state,
+        )
+
+    except Exception as e:
+        print(f"Error in identify fopdt from step: {e}")
+        return ToolExecutionError(message=str(e))
+
+def find_inflection_point(ctx: RunContext[StateDeps[SimContext]],
         props: InflectionPointProps,
-    ) -> AttributesGroup:
+    ) -> StateSnapshotEvent|ToolExecutionError:
     """
     Finds the inflection point of a signal.
 
@@ -120,22 +271,29 @@ def find_inflection_point(ctx: RunContext[ModelStore],
         the AttributesGroup contains the timestamp, value and slope of the inflection point.
         the AttributesGroup also contains a description of the inflection point.
     """
-    print(f"find inflection point with repr_id: {repr_id} and props: {props}")
-    logger.debug(f"Finding inflection point with props: {props}")
-    try:
-        data = ctx.deps.recreate(repr_id)
-    except Exception as e: raise e
-    try:    
-        response = _find_inflection_point(data, props)
-    except Exception as e:
-        logger.error(f"Error finding inflection point: {e}")
-        raise e
-    return response
 
+    try:
+        if len(ctx.deps.state.fmu.simulations) == 0:
+            return ToolExecutionError(message="No simulations have been run yet")
+    except Exception as e:
+        return ToolExecutionError(message=str(e))
+    try:
+        data = ctx.deps.state.fmu.simulations[-1].data
+        inflection_check = InflectionCheck(
+            signal_name=props.signal_name,
+            data=_find_inflection_point(data, props)
+        )
+        ctx.deps.state.fmu.simulations[-1].attributes.append(inflection_check.data)
+        return StateSnapshotEvent(
+            type=EventType.STATE_SNAPSHOT,
+            snapshot=ctx.deps.state,
+        )
+    except Exception as e:
+        print(f"Error in find inflection point: {e}")
+        return ToolExecutionError(message=str(e))
+    
 from control_toolbox.tools.analysis import find_rise_time as _find_rise_time
-def find_rise_time(ctx: RunContext[ModelStore],
-        repr_id: str,
-    ) -> AttributesGroup:
+def find_rise_time(ctx: RunContext[StateDeps[SimContext]]) -> StateSnapshotEvent|ToolExecutionError:
     """
     Finds the rise time of a signal.
     Args:
@@ -145,12 +303,28 @@ def find_rise_time(ctx: RunContext[ModelStore],
         the AttributesGroup contains the timestamp, value and rise time of the signal.
         the AttributesGroup also contains a description of the rise time.
     """
-    print(f"find rise time with repr_id: {repr_id}")
-    return _find_rise_time(ctx.deps.recreate(repr_id))
+    try:
+        if len(ctx.deps.state.fmu.simulations) == 0:
+            return ToolExecutionError(message="No simulations have been run yet")
+    except Exception as e:
+        return ToolExecutionError(message=str(e))
+    try:
+            
+        data = ctx.deps.state.fmu.simulations[-1].data
+        rise_time_check = RiseTimeCheck(
+            data=_find_rise_time(data)
+        )
+        ctx.deps.state.fmu.simulations[-1].attributes.append(rise_time_check.data)
+        return StateSnapshotEvent(
+            type=EventType.STATE_SNAPSHOT,
+            snapshot=ctx.deps.state,
+        )
 
-def find_characteristic_points(ctx: RunContext[ModelStore],
-        repr_id: str
-    ) -> AttributesGroup:
+    except Exception as e:
+        print(f"Error in find rise time: {e}")
+        return ToolExecutionError(message=str(e))
+
+def find_characteristic_points(ctx: RunContext[StateDeps[SimContext]]) -> StateSnapshotEvent|ToolExecutionError:
     """
     Finds the characteristic points of step responses.
     
@@ -164,31 +338,67 @@ def find_characteristic_points(ctx: RunContext[ModelStore],
             - p63 = (t63,y63) point when output first reachest 63% of total change. Can be used to determine the time constant T of a FOPDT system.
             - p90 = (t90,y90) point when output first reachest 90% of total change.
             - p98 = (t98,y98) point when output first reachest 98% of total change.
-    """    
-    print(f"find characteristic points with repr_id: {repr_id}")
-    return _find_characteristic_points(ctx.deps.recreate(repr_id))
+    """
+    try:
+        if len(ctx.deps.state.fmu.simulations) == 0:
+            return ToolExecutionError(message="No simulations have been run yet")
+    except Exception as e:
+        return ToolExecutionError(message=str(e))
+    try:
+        data = ctx.deps.state.fmu.simulations[-1].data
+        characteristic_points_check = CharacteristicPointsCheck(
+            data=_find_characteristic_points(data)
+        )
+        ctx.deps.state.fmu.simulations[-1].attributes.append(characteristic_points_check.data)
+        return StateSnapshotEvent(
+            type=EventType.STATE_SNAPSHOT,
+            snapshot=ctx.deps.state,
+        )
+    
+    except Exception as e:
+        print(f"Error in find characteristic points: {e}")
+        return ToolExecutionError(message=str(e))
 
-from control_toolbox.tools.pid_tuning import PIDParameters, lambda_tuning as _lambda_tuning, LambdaTuningProps
-from control_toolbox.tools.identification import FOPDTModel
-def lambda_tuning(model: FOPDTModel,
+def lambda_tuning(ctx: RunContext[StateDeps[SimContext]],
+        model: FOPDTModel,
         props: LambdaTuningProps,
-    ) -> PIDParameters:
+    ) -> StateSnapshotEvent|ToolExecutionError:
     """
     Compute PID controller parameters using the Lambda tuning method.
     """
-    print(f"lambda tuning with model: {model} and props: {props}")
+    messages:List[str] = []
     try:
-        response = _lambda_tuning(model, props)
-        return response
+        if len(ctx.deps.state.fmu.simulations) == 0:
+            messages.append("No simulations have been run yet, this might be unreliable.")
+        if len(ctx.deps.state.fmu.simulations[-1].fopdt_checks) == 0:
+            messages.append("No FOPDT checks have been run yet, this might be unreliable.")
+
     except Exception as e:
-        logger.error(f"Error lambda tuning: {e}")
-        raise e
-    return response
+        print(f"Error in lambda tuning A: {e}")
+        return ToolExecutionError(message=str(e))
+    try:
+        messages = []
+        params = _lambda_tuning(model, props)
+        ctx.deps.state.fmu.lambda_tuning_checks.append(LambdaTuningCheck(
+            model=model,
+            props=props,
+            params=params,
+            messages=messages
+        ))
+        return StateSnapshotEvent(
+            type=EventType.STATE_SNAPSHOT,
+            snapshot=ctx.deps.state,
+        )
+    except Exception as e:
+        print(f"Error in lambda tuning: {e}")
+        return ToolExecutionError(message=str(e))
+
+
     
-def find_peaks(ctx: RunContext[ModelStore],
+def find_peaks(ctx: RunContext[StateDeps[SimContext]],
         repr_id: str,
         props: FindPeaksProps,
-    ) -> AttributesGroup:
+    ) -> StateSnapshotEvent|ToolExecutionError:
     """
     Find peaks inside a signal based on peak properties.
 
@@ -198,13 +408,24 @@ def find_peaks(ctx: RunContext[ModelStore],
     Args:
         repr_id: the id representing data from a simulation run, that is used to get the full DataModel containing the step response data (the full data is not used as to not clutter the context window with lots of numbers)
     """
-    print(f"find peaks with props: {props}")
-    return _find_peaks(ctx.deps.recreate(repr_id), props)
+    try:
+        if len(ctx.deps.state.fmu.simulations) == 0:
+            return ToolExecutionError(message="No simulations have been run yet")
+    except Exception as e:
+        return ToolExecutionError(message=str(e))
 
-def find_settling_time(ctx: RunContext[ModelStore],
+    data = ctx.deps.state.fmu.simulations[-1].data
+    result = _find_peaks(data, props)
+    ctx.deps.state.fmu.simulations[-1].attributes.append(result)
+    return StateSnapshotEvent(
+        type=EventType.STATE_SNAPSHOT,
+        snapshot=ctx.deps.state,
+    )
+
+def find_settling_time(ctx: RunContext[StateDeps[SimContext]],
         repr_id: str,
         props: SettlingTimeProps,
-    ) -> AttributesGroup:
+    ) -> StateSnapshotEvent|ToolExecutionError:
     """
     Finds the settling time of each signal in the data. The settling time is defined as the
     first time point where the signal remains within a specified tolerance (percentage) of
@@ -217,11 +438,27 @@ def find_settling_time(ctx: RunContext[ModelStore],
     Returns:
         AttributesGroup containing the settling time.
     """
-    print(f"find settling time with props: {props}")
-    return _find_settling_time(ctx.deps.recreate(repr_id), props)
 
-from control_toolbox.tools.pid_tuning import UltimateTuningProps, PIDParameters, zn_pid_tuning as _zn_pid_tuning
-def zn_pid_tuning(props: UltimateTuningProps) -> PIDParameters:
+    try:
+        if len(ctx.deps.state.fmu.simulations) == 0:
+            return ToolExecutionError(message="No simulations have been run yet")
+    except Exception as e:
+        return ToolExecutionError(message=str(e))
+    
+    data = ctx.deps.state.fmu.simulations[-1].data
+    result = _find_settling_time(data, props)
+    ctx.deps.state.fmu.simulations[-1].settling_time_checks.append(SettlingTimeCheck(
+        props=props,
+        data=result
+    ))
+    return StateSnapshotEvent(
+        type=EventType.STATE_SNAPSHOT,
+        snapshot=ctx.deps.state,
+    )
+
+def zn_pid_tuning(ctx: RunContext[StateDeps[SimContext]],
+        props: UltimateTuningProps,
+    ) -> StateSnapshotEvent|ToolExecutionError:
     """
     Compute PID controller parameters using the Ziegler-Nichols closed-loop
     (also called ultimate gain or continuous-cycling) tuning method.
@@ -235,7 +472,26 @@ def zn_pid_tuning(props: UltimateTuningProps) -> PIDParameters:
         PIDParameters containing the PID controller parameters.
     """
     print(f"zn pid tuning with props: {props}")
-    return _zn_pid_tuning(props)
+    messages:List[str] = []
+    try:
+        if len(ctx.deps.state.fmu.simulations) == 0:
+            messages.append("No simulations have been run yet, this might be unreliable.")
+        if len(ctx.deps.state.fmu.simulations[-1].fopdt_checks) == 0:
+            messages.append("No FOPDT checks have been run yet, this might be unreliable.")
+
+    except Exception as e:
+        return ToolExecutionError(message=str(e))
+
+    params = _zn_pid_tuning(props)
+    ctx.deps.state.fmu.zn_pid_tuning_checks.append(ZNPIDTuningCheck(
+        props=props,
+        params=params,
+        messages=messages
+    ))
+    return StateSnapshotEvent(
+        type=EventType.STATE_SNAPSHOT,
+        snapshot=ctx.deps.state,
+    )
 
  
 ## add rise time,  and lam
@@ -248,11 +504,15 @@ def get_tools() -> list[Tool[Any]]:
         Tool(get_fmu_names,
             name="get_fmu_names",
             description=get_fmu_names.__doc__,
-            takes_ctx=False),
+            takes_ctx=True),
+        Tool(choose_fmu,    
+            name="choose_fmu",
+            description=choose_fmu.__doc__,
+            takes_ctx=True),
         Tool(get_model_description,
             name="get_model_description",
             description=get_model_description.__doc__,
-            takes_ctx=False),
+            takes_ctx=True),
 
         Tool(simulate_step_response,
             name="simulate_step_response",
@@ -292,12 +552,12 @@ def get_tools() -> list[Tool[Any]]:
         Tool(zn_pid_tuning,
             name="zn_pid_tuning",
             description=zn_pid_tuning.__doc__,
-            takes_ctx=False),
+            takes_ctx=True),
 
         Tool(lambda_tuning,
             name="lambda_tuning",
             description=lambda_tuning.__doc__,
-            takes_ctx=False),
+            takes_ctx=True),
         ]
 
 
@@ -305,18 +565,19 @@ if __name__ == "__main__":
 
     tools = get_tools()
     print(tools)
-    from pathlib import Path
     fmu_dir = Path("models/fmus")
     from control_toolbox.config import set_fmu_dir
     set_fmu_dir(fmu_dir)
     from control_agent.agent.stored_model import get_repr_store
     from control_agent.agent.agent import create_agent
-    agent = create_agent(model="openai:gpt-4o", tools=tools, deps=ModelStore)
+    agent = create_agent(model="openai:gpt-4o", tools=tools, deps=DepsType)
     import asyncio
-    result = asyncio.run(agent.run("What is the name of the FMU?", deps=get_repr_store()))
+    sim_context = SimContext(fmu_folder=str(Path("models/fmus")), notes=[])
+    sim_context.current_fmu = "PI_FOPDT_2"
+    result = asyncio.run(agent.run("What is the name of the FMU?", deps=StateDeps(sim_context)))
     print(result)
     storage = get_repr_store()
-    ctx = RunContext[ModelStore](
+    ctx = RunContext[StateDeps[SimContext]](
         model="openai:gpt-4o",    
         usage = result.usage,                        
 
@@ -339,7 +600,7 @@ if __name__ == "__main__":
         )
         id = result.repr_id
         from devtools import debug
-        debug(result)
+        print(result)
         full = storage.recreate(id)
         debug(full)
     except Exception as e:

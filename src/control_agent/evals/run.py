@@ -21,6 +21,7 @@ from control_agent.evals.report import save_report
 from control_agent.evals.experiments import datasets # type: ignore
 from control_toolbox.config import set_fmu_dir
 from control_agent.agent.stored_model import get_repr_store, StoredModel, ModelStore
+from pydantic_ai.ag_ui import StateDeps
 from typer import Typer
 app = Typer()
 
@@ -52,21 +53,38 @@ def get_normal_agent_runner(output_model: Type[OutputDataT]) -> Callable[[str], 
         return result.output # type: ignore
     return runner # type: ignore
 
-def get_agent_runner(output_model: Type[OutputDataT]) -> Callable[[str], Coroutine[Any, Any, OutputDataT]]:
+
+from control_agent.agent.tools_ctx import DepsType, SimContext
+def get_agent_runner(output_model: Type[OutputDataT], results_keeper: Dict[str, Any], ctx_keeper: Dict[str, SimContext]) -> Callable[[str], Coroutine[Any, Any, OutputDataT]]:
+    console = Console()
+    from pydantic import BaseModel
+    class Resp(BaseModel):
+        message: str
+        output: OutputDataT
+
     agent = create_agent(
         model=get_default_model(),
         tools=get_tools_ctx(),
-        deps=ModelStore,
+        deps=DepsType,
         output_type=output_model,
         max_retries=20,
 
     )
-    def runner(input: str) -> OutputDataT:
-        result = agent.run_sync(input, output_type=output_model, deps=get_repr_store()) # type: ignore
-        return result.output # type: ignore
+    def runner(input: str) -> Resp:
+        try:
+            sim_context = SimContext(fmu_folder=str(Path("models/fmus")), notes=[])
+            sim_context.current_fmu = "PI_FOPDT_2"
+            ctx_keeper[input] = sim_context
+            
+            result = agent.run_sync(input, output_type=output_model, deps=StateDeps(sim_context)) # type: ignore
+            results_keeper[input] = result.output
+        except Exception as e:
+            #console.print(f"[red]ERROR in agent runner: {e}[/red]")
+            raise
+        return result # type: ignore
     return runner # type: ignore
 
-def print_report(report: EvaluationReport, title: str, note:str|None = None) -> None:
+def print_report(report: EvaluationReport, title: str, note:str|None = None, results_keeper: Dict[str, Any] = {}, ctx_keeper: Dict[str, SimContext] = {}) -> None:
     console = Console()
     console.print(f"\n{'='*80}")
     console.print(f"Experiment: {title}")
@@ -102,7 +120,18 @@ def print_report(report: EvaluationReport, title: str, note:str|None = None) -> 
                 console.print(f"\t\t[green]✓ {name}[/green]", end=", ")
             console.print(f"- {assertion.reason}")
         console.print(f"\n")
+    return
+    for name, ctx in ctx_keeper.items():
+        console.print(f"\nContext for {name}:")
+        console.print(f"\t{ctx}")
+    for name, result in results_keeper.items():
+        console.print(f"\nResult for {name}:")
+        console.print(f"\t{result}")
+    
 
+    
+from typing import Dict
+results: Dict[str, Any] = {}
 
 def run_experiment(name: str, ctx_tools: bool = False, save: bool = False) -> None:
     try:
@@ -115,19 +144,21 @@ def run_experiment(name: str, ctx_tools: bool = False, save: bool = False) -> No
 
         else:
             dataset, OutputDataT = datasets[name] # type: ignore
+            results_keeper: Dict[str, Any] = {}
+            ctx_keeper: Dict[str, Any] = {}
             if not ctx_tools:
                 runner = get_normal_agent_runner(OutputDataT) # type: ignore
                 note = f"Data is passed to tools via context window"
                 _key = f"{name}_data_in_context_window"
 
             else:
-                runner = get_agent_runner(OutputDataT) # type: ignore
+                runner = get_agent_runner(OutputDataT, results_keeper, ctx_keeper) # type: ignore
                 note = f"Tools have access to data via stored model"
                 _key = f"{name}_data_in_stored_model"
 
             report = dataset.evaluate_sync(runner) # type: ignore
-            
-            print_report(report, name, note)
+            #console.print(f"[debug] Report has {len(report.cases)} cases, {len(report.failures) if hasattr(report, 'failures') else 0} failures")
+            print_report(report, name, note, results_keeper, ctx_keeper)
             # Save the report
             if save:
                 save_report(_key, report)
@@ -140,14 +171,26 @@ def run_experiment(name: str, ctx_tools: bool = False, save: bool = False) -> No
         raise
 
 @app.command()
-def evaluate(experiment: str="all", ctx_tools: bool  = False, save: bool = False, fmu_dir: Path=Path("models/fmus")):
+def evaluate(experiment: str="all", ctx_tools: bool  = False, save: bool = False, fmu_dir: Path=Path("models/fmus"), skip_eval: bool = False):
     set_fmu_dir(fmu_dir)
-    
-    if experiment == "all":
-       for experiment in preferred_order + [k for k in datasets.keys() if k not in preferred_order]:
-            run_experiment(experiment, ctx_tools, save)
+    if skip_eval:
+        runner = get_agent_runner(str)
+        dataset, OutputDataT = datasets[experiment] # type: ignore
+        cases = dataset.cases
+        for case in cases:
+            query = case.inputs
+            result = runner(query)
+            print(result)
+        
     else:
-        run_experiment(experiment, ctx_tools, save)
+
+            
+        if experiment == "all":
+            for experiment in preferred_order + [k for k in datasets.keys() if k not in preferred_order]:
+                run_experiment(experiment, ctx_tools, save)
+        else:
+            run_experiment(experiment, ctx_tools, save)
+
 
 
 

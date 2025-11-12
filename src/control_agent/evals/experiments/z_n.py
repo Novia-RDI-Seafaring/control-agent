@@ -1,10 +1,10 @@
 from control_agent.evals.common import * # type: ignore
-from control_agent.experiment_definitions.response_schema import ZNResponse
+from control_agent.experiment_definitions.response_schema import ZNResponse, CaseResponse
 from control_agent.evals.evaluators.required_tool_use_evaluator import RequiredToolUseEvaluator, ToolUseSpec
 
-OutputDataT = ZNResponse
+OutputDataT = CaseResponse[ZNResponse]
 
-dataset = Dataset[str, ZNResponse, Any](
+dataset = Dataset[str, CaseResponse[ZNResponse], Any](
     name='z_n',
     cases=[
         Case(

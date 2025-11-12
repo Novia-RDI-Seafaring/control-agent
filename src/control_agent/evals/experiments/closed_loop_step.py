@@ -1,10 +1,10 @@
-from control_agent.evals.common import * # type: ignore
-from control_agent.experiment_definitions.response_schema import StepResponse
+from control_agent.evals.common import * 
+from control_agent.experiment_definitions.response_schema import StepResponse, CaseResponse
 from control_agent.evals.evaluators.required_tool_use_evaluator import RequiredToolUseEvaluator, ToolUseSpec
 
-OutputDataT = StepResponse
+OutputDataT = CaseResponse[StepResponse]
 
-dataset = Dataset[str, StepResponse, Any](
+dataset = Dataset[str, CaseResponse[StepResponse], Any](
     name='closed_loop_step',
     cases=[
         Case(

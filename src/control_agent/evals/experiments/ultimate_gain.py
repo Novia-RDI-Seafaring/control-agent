@@ -1,10 +1,10 @@
 from control_agent.evals.common import * # type: ignore
-from control_agent.experiment_definitions.response_schema import UltimateGainResponse
+from control_agent.experiment_definitions.response_schema import UltimateGainResponse, CaseResponse
 from control_agent.evals.evaluators.required_tool_use_evaluator import RequiredToolUseEvaluator, ToolUseSpec
 
-OutputDataT = UltimateGainResponse
+OutputDataT = CaseResponse[UltimateGainResponse]
 
-dataset = Dataset[str, UltimateGainResponse, Any](
+dataset = Dataset[str, CaseResponse[UltimateGainResponse], Any](
     name='ultimate_gain',
     cases=[
         Case(

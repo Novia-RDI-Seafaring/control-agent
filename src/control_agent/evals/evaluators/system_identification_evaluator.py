@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Dict, Any
+from control_agent.experiment_definitions.response_schema import CaseResponse
 from control_agent.experiment_definitions.response_schema import SystemIdentificationResponse, SystemParameters
 from pydantic_evals.evaluators import (
     Evaluator,
@@ -13,16 +14,16 @@ logger = getLogger(__name__)
 
 
 @dataclass
-class SystemIdentificationEvaluator(Evaluator[object, SystemIdentificationResponse, object]):
+class SystemIdentificationEvaluator(Evaluator[object, CaseResponse[SystemIdentificationResponse], object]):
     """Evaluate system identification results against ground truth FOPDT parameters"""
     ground_truth_K: float
     ground_truth_T: float
     ground_truth_L: float
     tolerance: float = 0.05  # 5% tolerance
     
-    def evaluate(self, ctx: EvaluatorContext[object, SystemIdentificationResponse, object]) -> EvaluationReason:
+    def evaluate(self, ctx: EvaluatorContext[object, CaseResponse[SystemIdentificationResponse], object]) -> EvaluationReason:
         """Compare identified parameters with ground truth"""
-        output: SystemIdentificationResponse = ctx.output
+        output: SystemIdentificationResponse = ctx.output.output
         system_parameters: SystemParameters = output.parameters
 
         K = system_parameters.K

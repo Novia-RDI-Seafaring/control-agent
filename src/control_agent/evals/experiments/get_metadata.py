@@ -1,10 +1,10 @@
 from control_agent.evals.common import * # type: ignore
-from control_agent.experiment_definitions.response_schema import GetMetadataResponse
+from control_agent.experiment_definitions.response_schema import GetMetadataResponse, CaseResponse
 from control_agent.evals.evaluators.required_tool_use_evaluator import RequiredToolUseEvaluator, ToolUseSpec
 
-OutputDataT = GetMetadataResponse
+OutputDataT = CaseResponse[GetMetadataResponse]
 
-dataset = Dataset[str, GetMetadataResponse, Any](
+dataset = Dataset[str, CaseResponse[GetMetadataResponse], Any](
     name='get_metadata',
     cases=[
         Case(

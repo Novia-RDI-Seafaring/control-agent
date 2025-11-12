@@ -1,9 +1,10 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List
 import json
 
-def get_json_schema(model):
+def get_json_schema(model: BaseModel) -> str:
     return json.dumps(model.model_json_schema(), indent=2)
+
 
 class ListModelNamesResponse(BaseModel):
     model_names: List[str]
@@ -62,3 +63,17 @@ class TuningOvershootResponse(BaseModel):
     controller_parameters: PIDParameters
     overshoot: float
     rise_time: float
+
+
+from typing import TypeVar, Generic
+T = TypeVar('T')
+from dataclasses import dataclass
+@dataclass(eq=True)
+class CaseResponse(Generic[T]):
+    message: str
+    output: T
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, CaseResponse):
+            return False
+        return self.output == other.output # type: ignore
