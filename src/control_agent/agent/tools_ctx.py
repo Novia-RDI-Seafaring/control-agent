@@ -221,10 +221,7 @@ def find_settling_time(ctx: RunContext[ModelStore],
     return _find_settling_time(ctx.deps.recreate(repr_id), props)
 
 from control_toolbox.tools.pid_tuning import UltimateTuningProps, PIDParameters, zn_pid_tuning as _zn_pid_tuning
-def zn_pid_tuning(ctx: RunContext[ModelStore],
-        repr_id: str,
-        props: UltimateTuningProps,
-    ) -> PIDParameters:
+def zn_pid_tuning(props: UltimateTuningProps) -> PIDParameters:
     """
     Compute PID controller parameters using the Ziegler-Nichols closed-loop
     (also called ultimate gain or continuous-cycling) tuning method.
@@ -238,7 +235,7 @@ def zn_pid_tuning(ctx: RunContext[ModelStore],
         PIDParameters containing the PID controller parameters.
     """
     print(f"zn pid tuning with props: {props}")
-    return _zn_pid_tuning(ctx.deps.recreate(repr_id), props)
+    return _zn_pid_tuning(props)
 
  
 ## add rise time,  and lam
@@ -295,7 +292,7 @@ def get_tools() -> list[Tool[Any]]:
         Tool(zn_pid_tuning,
             name="zn_pid_tuning",
             description=zn_pid_tuning.__doc__,
-            takes_ctx=True),
+            takes_ctx=False),
 
         Tool(lambda_tuning,
             name="lambda_tuning",
