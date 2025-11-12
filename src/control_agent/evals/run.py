@@ -85,12 +85,24 @@ def get_agent_runner(output_model: Type[OutputDataT], results_keeper: Dict[str, 
 
 def print_report(report: EvaluationReport, title: str, note:str|None = None, results_keeper: Dict[str, Any] = {}, ctx_keeper: Dict[str, SimContext] = {}) -> None:
     console = Console()
+
+    for name, sim_state in ctx_keeper.items():
+        console.print(f"\nContext for {name}:")
+        console.print(f"\tCurrent FMU: {sim_state.current_fmu}")
+        try:
+            fmu = sim_state.fmu
+        except Exception as e:
+            pass
+    for name, result in results_keeper.items():
+        console.print(f"\nResult for {name}:")
+        console.print(f"\t{result}")
+
+
     console.print(f"\n{'='*80}")
     console.print(f"Experiment: {title}")
     console.print(f"{'='*80}")
     if note:
-        console.print(f"Note: {note}")
-    
+        console.print(f"Note: {note}")    
 
     for case in report.cases:
         console.print(f"\nCase: {case.name}")
@@ -109,8 +121,9 @@ def print_report(report: EvaluationReport, title: str, note:str|None = None, res
         console.print(f"\n\tAssertion Details:")
         if case.expected_output:
             console.print(f"\tExpected Output: {case.expected_output}")
-        if case.output:
-            console.print(f"\tOutput: {case.output}")
+
+
+
         console.print(f"\tEvaluators:")
         for name, assertion in case.assertions.items():
             if not assertion.value:
@@ -119,13 +132,16 @@ def print_report(report: EvaluationReport, title: str, note:str|None = None, res
                 console.print(f"\t\t[green]✓ {name}[/green]", end=", ")
             console.print(f"- {assertion.reason}")
         console.print(f"\n")
-    return
-    for name, ctx in ctx_keeper.items():
-        console.print(f"\nContext for {name}:")
-        console.print(f"\t{ctx}")
-    for name, result in results_keeper.items():
-        console.print(f"\nResult for {name}:")
-        console.print(f"\t{result}")
+
+        if case.output:
+            if hasattr(case.output, 'message'):
+                console.print(f"\nMessage:")
+                console.print(case.output.message)
+            if hasattr(case.output, 'output'):
+                console.print(f"\t\tOutput:\n")
+                console.print(case.output.output)
+    
+
     
 
     

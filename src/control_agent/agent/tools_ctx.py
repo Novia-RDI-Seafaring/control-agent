@@ -2,6 +2,8 @@ from control_agent.agent.common import *
 from control_agent.agent.ctx import *
 logger = getLogger(__name__)
 
+console = Console()
+
 from typing import Literal
 def control_help(ctx: RunContext[StateDeps[SimContext]], topic:Literal["fopdt_pi_description", "keywords", "lambda_tuning", "zn_pid_tuning", "seaborg"]) -> str:
     """
@@ -15,7 +17,7 @@ def control_help(ctx: RunContext[StateDeps[SimContext]], topic:Literal["fopdt_pi
         case "keywords": path = "docs/keywords.md"
         case _: return f"Unknown topic: {topic}"
     try:
-        print(f"Reading documentation file {path}")
+        console.print(f"Reading documentation file {path}")
         with open(path, "r", encoding="utf-8") as f:
             return f.read()
     except Exception as e:
@@ -29,14 +31,14 @@ def look_at_plot(ctx: RunContext[StateDeps[SimContext]],
     """
     import matplotlib
     matplotlib.use('Agg') # type: ignore
-
     try:
         if len(ctx.deps.state.fmu.simulations) == 0:
+            console.print(f"No simulations have been run yet")
             return ToolExecutionError(message="No simulations have been run yet")
     except Exception as e:
         return ToolExecutionError(message=str(e))
     try:
-        print(f"will try to look at plot of signal: {signal_name}")
+        console.print(f"will try to look at plot of signal: {signal_name}")
         data = ctx.deps.state.fmu.simulations[-1].data
         figures = plot_data(data)
         try:
@@ -51,7 +53,7 @@ def look_at_plot(ctx: RunContext[StateDeps[SimContext]],
             buf.seek(0)
             png_image: bytes = buf.read()
             buf.close()
-            print(f"Looking at image of signal: {signal_name}")
+            console.print(f"Looking at image of signal: {signal_name}")
             return BinaryContent(data=png_image, media_type='image/png')
         except Exception as e:
             return ToolExecutionError(message=str(e))
@@ -92,7 +94,7 @@ def choose_fmu(ctx: RunContext[StateDeps[SimContext]],
     )
 
     except Exception as e:
-        print(f"Error in choose fmu: {e}")
+        console.print(f"Error in choose fmu: {e}")
         return ToolExecutionError(message=str(e))
 
 def get_model_description(ctx: RunContext[StateDeps[SimContext]]) -> ToolExecutionError|StateSnapshotEvent:
@@ -113,7 +115,7 @@ def get_model_description(ctx: RunContext[StateDeps[SimContext]]) -> ToolExecuti
         )
 
     except Exception as e:
-        print(f"Error in get model description: {e}")
+        console.print(f"Error in get model description: {e}")
         return ToolExecutionError(message=str(e))
 
 
@@ -147,8 +149,9 @@ def simulate_step_response(ctx: RunContext[StateDeps[SimContext]],
     except Exception as e:
         return ToolExecutionError(message=str(e))
     try:
-        print(f"simulate step response with props: {sim_props} and step props: {step_props}")
-
+        console.print(f"simulate step response:")
+        console.print(sim_props)
+        console.print(step_props)
         data = _simulate_step_response(fmu_path, sim_props, step_props)
         ctx.deps.state.fmu.simulations.append(SimulationRun(
             sim_props=sim_props,
@@ -364,9 +367,8 @@ def find_peaks(ctx: RunContext[StateDeps[SimContext]],
             return ToolExecutionError(message="No simulations have been run yet")
     except Exception as e:
         return ToolExecutionError(message=str(e))
-    print("\nFinding peaks")
-    for key, value in props.model_dump().items():
-        print(f"\tAttribute: {key}: {value}")
+    console.print("\nFinding peaks")
+    console.print(props)
     data = ctx.deps.state.fmu.simulations[-1].data
     result = _find_peaks(data, props)
     ctx.deps.state.fmu.simulations[-1].attributes.append(result)
@@ -399,7 +401,10 @@ def find_settling_time(ctx: RunContext[StateDeps[SimContext]],
         return ToolExecutionError(message=str(e))
     
     data = ctx.deps.state.fmu.simulations[-1].data
+    debug(props)
+
     result = _find_settling_time(data, props)
+    debug(result)
     ctx.deps.state.fmu.simulations[-1].settling_time_checks.append(SettlingTimeCheck(
         props=props,
         data=result
@@ -428,7 +433,7 @@ def zn_pid_tuning(ctx: RunContext[StateDeps[SimContext]],
     Returns:
         PIDParameters containing the PID controller parameters.
     """
-    print(f"zn pid tuning with props: {props}")
+    console.print(f"zn pid tuning with props")
     messages:List[str] = []
     try:
         if len(ctx.deps.state.fmu.simulations) == 0:
@@ -439,7 +444,9 @@ def zn_pid_tuning(ctx: RunContext[StateDeps[SimContext]],
     except Exception as e:
         return ToolExecutionError(message=str(e))
 
+    debug(props)
     params = _zn_pid_tuning(props)
+    debug(params)
     ctx.deps.state.fmu.zn_pid_tuning_checks.append(ZNPIDTuningCheck(
         props=props,
         params=params,

@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 from logging import getLogger
 from pathlib import Path
+from rich.console import Console
 
 from pydantic import BaseModel, Field
 from matplotlib.figure import Figure
@@ -44,6 +45,7 @@ from control_toolbox.tools.pid_tuning import lambda_tuning as _lambda_tuning
 from control_toolbox.tools.pid_tuning import zn_pid_tuning as _zn_pid_tuning
 from control_toolbox.tools.plotting import plot_data
 
+from devtools import debug
 
 from openai import AsyncOpenAI
 
@@ -64,6 +66,7 @@ __all__ = [
     # pydantic
     'BaseModel', 'Field',
     'Figure',
+    'Console',
     # ag_ui
     'EventType', 'StateSnapshotEvent', 'StateDeps',
     # AI agent infrastructure
@@ -81,4 +84,5 @@ __all__ = [
     'AsyncOpenAI',
     # stored_model.py explicit imports
     'InMemoryDataStorage', 'StoredRepresentation', 'ReprStore', 'DataModelTeaser',
+    'debug',
 ]
