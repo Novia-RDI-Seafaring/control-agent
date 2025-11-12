@@ -23,6 +23,7 @@ from pydantic_ai.models import Model, KnownModelName
 from pydantic_ai.providers import Provider
 
 from control_toolbox.core import DataModel, AttributesGroup
+
 from control_toolbox.tools.identification import IdentificationProps, FOPDTModel
 from control_toolbox.tools.information import ModelDescription
 from control_toolbox.tools.pid_tuning import UltimateTuningProps, PIDParameters, LambdaTuningProps
@@ -41,6 +42,9 @@ from control_toolbox.tools.analysis import find_settling_time as _find_settling_
 from control_toolbox.tools.analysis import find_rise_time as _find_rise_time
 from control_toolbox.tools.pid_tuning import lambda_tuning as _lambda_tuning
 from control_toolbox.tools.pid_tuning import zn_pid_tuning as _zn_pid_tuning
+from control_toolbox.tools.plotting import plot_data
+
+
 from openai import AsyncOpenAI
 
 from control_toolbox.storage import InMemoryDataStorage, StoredRepresentation, ReprStore
@@ -71,6 +75,7 @@ __all__ = [
     '_get_fmu_names', '_get_model_description', '_identify_fopdt_from_step', '_simulate_step_response', '_simulate',
     '_find_inflection_point', '_find_characteristic_points', '_find_peaks', '_find_settling_time', '_find_rise_time',
     '_lambda_tuning', '_zn_pid_tuning',
+    'plot_data',
     # openai
     'AsyncOpenAI',
     # stored_model.py explicit imports
