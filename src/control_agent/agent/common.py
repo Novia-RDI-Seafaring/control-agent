@@ -15,7 +15,7 @@ from rich.console import Console
 from pydantic import BaseModel, Field
 from matplotlib.figure import Figure
 from ag_ui.core import EventType, StateSnapshotEvent # type: ignore
-from pydantic_ai import Agent, BinaryContent
+from pydantic_ai import Agent, BinaryContent, AgentRunResult, UserPromptPart, ModelRequest, ModelResponse, TextPart, ToolCallPart, ToolReturnPart
 from pydantic_ai.tools import Tool # type: ignore
 from pydantic_ai.ag_ui import StateDeps
 from pydantic_ai._run_context import RunContext, AgentDepsT
@@ -70,7 +70,8 @@ __all__ = [
     # ag_ui
     'EventType', 'StateSnapshotEvent', 'StateDeps',
     # AI agent infrastructure
-    'Agent', 'Tool', 'StateDeps', 'RunContext', 'OpenAIChatModel', 'AgentDepsT', 'OutputDataT', 'Model', 'KnownModelName', 'Provider', 'BinaryContent',
+    'Agent', 'Tool', 'AgentRunResult', 'StateDeps', 'RunContext', 'OpenAIChatModel', 'AgentDepsT', 'OutputDataT', 'Model', 'KnownModelName', 'Provider', 'BinaryContent',
+    'UserPromptPart', 'ModelRequest', 'ModelResponse', 'TextPart', 'ToolCallPart', 'ToolReturnPart',
     # control_toolbox core and tunings
     'DataModel', 'AttributesGroup',
     'InflectionPointProps', 'IdentificationProps', 'FOPDTModel', 'ModelDescription', 'UltimateTuningProps', 'PIDParameters', 'LambdaTuningProps',

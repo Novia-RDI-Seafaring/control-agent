@@ -1,4 +1,4 @@
-from pydantic_ai import Agent
+from pydantic_ai import Agent, AgentRunResult
 from pydantic import BaseModel
 from pydantic_evals import Dataset, Case
 from typing import List, Type, Callable, Any, Generic, TypeVar, Coroutine

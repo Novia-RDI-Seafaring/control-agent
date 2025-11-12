@@ -1,5 +1,5 @@
 from __future__ import annotations
-
+from control_agent.agent.common import *
 import os
 from typing import Any, Optional, Type, Callable, Coroutine
 from pathlib import Path
@@ -54,7 +54,7 @@ def get_normal_agent_runner(output_model: Type[OutputDataT]) -> Callable[[str], 
 
 
 from control_agent.agent.tools_ctx import DepsType, SimContext
-def get_agent_runner(output_model: Type[OutputDataT], results_keeper: Dict[str, Any], ctx_keeper: Dict[str, SimContext]) -> Callable[[str], Coroutine[Any, Any, OutputDataT]]:
+def get_agent_runner(output_model: Type[OutputDataT], results_keeper: Dict[str, AgentRunResult[OutputDataT]], ctx_keeper: Dict[str, SimContext]) -> Callable[[str], Coroutine[Any, Any, AgentRunResult[OutputDataT]]]:
     console = Console()
     from pydantic import BaseModel
     class Resp(BaseModel):
@@ -76,14 +76,14 @@ def get_agent_runner(output_model: Type[OutputDataT], results_keeper: Dict[str, 
             ctx_keeper[input] = sim_context
             
             result = agent.run_sync(input, output_type=output_model, deps=StateDeps(sim_context)) # type: ignore
-            results_keeper[input] = result.output
+            results_keeper[input] = result
         except Exception as e:
             #console.print(f"[red]ERROR in agent runner: {e}[/red]")
             raise
         return result # type: ignore
     return runner # type: ignore
 
-def print_report(report: EvaluationReport, title: str, note:str|None = None, results_keeper: Dict[str, Any] = {}, ctx_keeper: Dict[str, SimContext] = {}) -> None:
+def print_report(report: EvaluationReport, title: str, note:str|None = None, results_keeper: Dict[str, AgentRunResult[Any]] = {}, ctx_keeper: Dict[str, SimContext] = {}) -> None:
     console = Console()
 
     for name, sim_state in ctx_keeper.items():
@@ -96,7 +96,19 @@ def print_report(report: EvaluationReport, title: str, note:str|None = None, res
     for name, result in results_keeper.items():
         console.print(f"\nResult for {name}:")
         console.print(f"\t{result}")
-
+        for message  in result.all_messages():
+            for part in message.parts:
+                
+                if isinstance(part, UserPromptPart):
+                    console.print(f"\t\tUser: {part.content}")
+                if isinstance(part, ToolCallPart) and part.tool_name != "final_result":
+                    console.print(f"\t\t\tTool call: {part.tool_name}")
+                    """import json
+                    for key, value in json.loads(part.args).items():
+                        console.print(f"\t\t\t{key}={value},")
+                    console.print(f"\t\t)", end="")"""
+                if isinstance(part, ToolReturnPart) and part.tool_name == "final_result":
+                    console.print(f"\t\tAgent: {part.content}")
 
     console.print(f"\n{'='*80}")
     console.print(f"Experiment: {title}")
@@ -133,13 +145,13 @@ def print_report(report: EvaluationReport, title: str, note:str|None = None, res
             console.print(f"- {assertion.reason}")
         console.print(f"\n")
 
-        if case.output:
+        """if case.output:
             if hasattr(case.output, 'message'):
                 console.print(f"\nMessage:")
                 console.print(case.output.message)
             if hasattr(case.output, 'output'):
                 console.print(f"\t\tOutput:\n")
-                console.print(case.output.output)
+                console.print(case.output.output)"""
     
 
     
