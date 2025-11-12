@@ -105,6 +105,24 @@ class ToolExecutionError(BaseModel):
     message: str
 
 DepsType = StateDeps[SimContext]
+from typing import Literal
+def control_help(ctx: RunContext[StateDeps[SimContext]], topic:Literal["fopdt_pi_description", "keywords", "lambda_tuning", "zn_pid_tuning", "seaborg"]) -> str:
+    """
+    Provides help on control tuning methods.
+    """
+    match topic:
+        case "fopdt_pi_description": path = "docs/fopdt_pi_description.md"
+        case "lambda_tuning": path = "docs/lam_method.md"
+        case "zn_pid_tuning": path = "docs/zn_method.md"
+        case "seaborg": path = "docs/seaborg.md"
+        case "keywords": path = "docs/keywords.md"
+        case _: return f"Unknown topic: {topic}"
+    try:
+        print(f"Reading documentation file {path}")
+        with open(path, "r", encoding="utf-8") as f:
+            return f.read()
+    except Exception as e:
+        return f"Could not read documentation file {path}: {e}"
 
 def get_fmu_names(ctx: RunContext[StateDeps[SimContext]]) -> List[str]:
     """
@@ -396,7 +414,6 @@ def lambda_tuning(ctx: RunContext[StateDeps[SimContext]],
 
     
 def find_peaks(ctx: RunContext[StateDeps[SimContext]],
-        repr_id: str,
         props: FindPeaksProps,
     ) -> StateSnapshotEvent|ToolExecutionError:
     """
@@ -413,7 +430,9 @@ def find_peaks(ctx: RunContext[StateDeps[SimContext]],
             return ToolExecutionError(message="No simulations have been run yet")
     except Exception as e:
         return ToolExecutionError(message=str(e))
-
+    print("\nFinding peaks")
+    for key, value in props.model_dump().items():
+        print(f"\tAttribute: {key}: {value}")
     data = ctx.deps.state.fmu.simulations[-1].data
     result = _find_peaks(data, props)
     ctx.deps.state.fmu.simulations[-1].attributes.append(result)
@@ -463,8 +482,12 @@ def zn_pid_tuning(ctx: RunContext[StateDeps[SimContext]],
     Compute PID controller parameters using the Ziegler-Nichols closed-loop
     (also called ultimate gain or continuous-cycling) tuning method.
     
+    You need to do simulations first, in order to determing Ku and Pu
+    from closed loop experiments with a PI controller first
+    This tool assume you have the right values.
+    
+    
     Args:
-        repr_id: the id representing data from a simulation run, that is used to get the full DataModel containing the step response data (the full data is not used as to not clutter the context window with lots of numbers)
         props: UltimateTuningProps containing the ultimate tuning properties
             - controller: Type of controller to tune.
             - method: Method to tune the controller.
@@ -499,7 +522,10 @@ def zn_pid_tuning(ctx: RunContext[StateDeps[SimContext]],
 # Build the tool list with stored I/O
 def get_tools() -> list[Tool[Any]]:
     return [
-
+        Tool(control_help,
+            name="control_help",
+            description=control_help.__doc__,
+            takes_ctx=True),
         # information tools
         Tool(get_fmu_names,
             name="get_fmu_names",
