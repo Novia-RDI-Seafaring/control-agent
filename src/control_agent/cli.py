@@ -1,5 +1,5 @@
 import typer
-from control_agent.sys import FOPDT
+from control_agent.fopdt_sys import FOPDT
 from control_agent import ZieglerNicholsMethod
 from control_agent.lam import LambdaTuningMethod
 
