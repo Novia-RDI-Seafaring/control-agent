@@ -1,110 +1,7 @@
-from pydantic_ai._run_context import RunContext
-
-from control_toolbox.tools.information import get_fmu_names as _get_fmu_names, get_model_description as _get_model_description, ModelDescription
-from control_toolbox.tools.simulation import simulate_step_response as _simulate_step_response, simulate as _simulate
-from control_toolbox.tools.identification import identify_fopdt_from_step as _identify_fopdt_from_step
-from control_toolbox.tools.analysis import find_inflection_point as _find_inflection_point, find_characteristic_points as _find_characteristic_points, find_peaks as _find_peaks, find_settling_time as _find_settling_time 
-from control_toolbox.tools.identification import IdentificationProps, FOPDTModel
-from control_toolbox.tools.simulation import SimulationStepResponseProps, StepProps
-from control_toolbox.tools.analysis import AttributesGroup, FindPeaksProps, InflectionPointProps, SettlingTimeProps
-
-from control_toolbox.tools.pid_tuning import PIDParameters, lambda_tuning as _lambda_tuning, LambdaTuningProps
-from control_toolbox.tools.identification import FOPDTModel
-from control_toolbox.tools.pid_tuning import UltimateTuningProps, PIDParameters, zn_pid_tuning as _zn_pid_tuning
-
-
-from typing import Any, Union, Tuple, List, Optional, Dict
-from pydantic_ai.tools import Tool
-from logging import getLogger
-from pydantic_ai import Agent, Tool
-from pydantic_ai.ag_ui import StateDeps
-import uuid
-from ag_ui.core import EventType, StateSnapshotEvent
-from pathlib import Path
-
+from control_agent.agent.common import *
+from control_agent.agent.ctx import *
 logger = getLogger(__name__)
-from control_toolbox.core import DataModel, DataModelTeaser
-from pydantic import BaseModel, Field
 
-class SimulationResponse(BaseModel):
-    repr_id: str
-    data: DataModel
-
-
-class FOPDTCheck(BaseModel):
-    props: IdentificationProps
-    data: FOPDTModel
-
-class InflectionCheck(BaseModel):
-    signal_name: str
-    data: AttributesGroup
-
-class RiseTimeCheck(BaseModel):
-    data: AttributesGroup
-
-class PIDCheck(BaseModel):
-    data: PIDParameters
-
-class LambdaTuningCheck(BaseModel):
-    model: FOPDTModel
-    props: LambdaTuningProps
-    params: PIDParameters
-    messages: List[str]
-
-class ZNPIDTuningCheck(BaseModel):
-    props: UltimateTuningProps
-    params: PIDParameters
-    messages: List[str]
-
-class SettlingTimeCheck(BaseModel):
-    props: SettlingTimeProps
-    data: AttributesGroup
-
-class SimulationRun(BaseModel):
-    sim_props: SimulationStepResponseProps
-    step_props: StepProps
-    data: DataModel
-    fopdt_checks: List[FOPDTCheck] = Field(default_factory=list)
-    pid_checks: List[PIDCheck] = Field(default_factory=list)
-    attributes: List[AttributesGroup] = Field(default_factory=list)
-    settling_time_checks: List[SettlingTimeCheck] = Field(default_factory=list)
-
-class CharacteristicPointsCheck(BaseModel):
-    data: AttributesGroup
-
-class Analysis(BaseModel):
-    props: IdentificationProps
-    data: AttributesGroup
-
-
-class FmuContext(BaseModel):
-    fmu_name: str = "PI_FOPDT_2"
-    fmu_path: str = "models/fmus/PI_FOPDT_2.fmu"
-    model_description: Optional[ModelDescription] = Field(default=None)
-    simulations: List[SimulationRun] = Field(default_factory=list)
-    lambda_tuning_checks: List[LambdaTuningCheck] = Field(default_factory=list)
-    zn_pid_tuning_checks: List[ZNPIDTuningCheck] = Field(default_factory=list)
-
-        
-
-class SimContext(BaseModel):
-    query: str = Field(default="")
-    fmu_folder: str = Field(default="models/fmus")
-    current_fmu: Optional[str] = Field(default=None)
-    fmu_names: List[str] = Field(default_factory=list)
-    fmus: Dict[str, FmuContext] = Field(default_factory=dict)
-    notes: List[str]
-
-    @property
-    def fmu(self) -> FmuContext:
-        if self.current_fmu is None: raise ValueError("No FMU chosen")
-        if self.current_fmu not in self.fmus: raise ValueError(f"FMU {self.current_fmu} not found")
-        return self.fmus[self.current_fmu]
-    
-class ToolExecutionError(BaseModel):
-    message: str
-
-DepsType = StateDeps[SimContext]
 from typing import Literal
 def control_help(ctx: RunContext[StateDeps[SimContext]], topic:Literal["fopdt_pi_description", "keywords", "lambda_tuning", "zn_pid_tuning", "seaborg"]) -> str:
     """
@@ -123,6 +20,19 @@ def control_help(ctx: RunContext[StateDeps[SimContext]], topic:Literal["fopdt_pi
             return f.read()
     except Exception as e:
         return f"Could not read documentation file {path}: {e}"
+
+def look_at_plot(ctx: RunContext[StateDeps[SimContext]],
+        plot_type: Literal["step_response", "bode", "nyquist", "root_locus"],
+    ) -> StateSnapshotEvent|ToolExecutionError:
+    """
+    Looks at a plot of the data.
+    """
+    try:
+        if len(ctx.deps.state.fmu.simulations) == 0:
+            return ToolExecutionError(message="No simulations have been run yet")
+    except Exception as e:
+        return ToolExecutionError(message=str(e))
+    
 
 def get_fmu_names(ctx: RunContext[StateDeps[SimContext]]) -> List[str]:
     """
@@ -310,7 +220,6 @@ def find_inflection_point(ctx: RunContext[StateDeps[SimContext]],
         print(f"Error in find inflection point: {e}")
         return ToolExecutionError(message=str(e))
     
-from control_toolbox.tools.analysis import find_rise_time as _find_rise_time
 def find_rise_time(ctx: RunContext[StateDeps[SimContext]]) -> StateSnapshotEvent|ToolExecutionError:
     """
     Finds the rise time of a signal.
@@ -586,50 +495,3 @@ def get_tools() -> list[Tool[Any]]:
             takes_ctx=True),
         ]
 
-
-if __name__ == "__main__":
-
-    tools = get_tools()
-    print(tools)
-    fmu_dir = Path("models/fmus")
-    from control_toolbox.config import set_fmu_dir
-    set_fmu_dir(fmu_dir)
-    from control_agent.agent.stored_model import get_repr_store
-    from control_agent.agent.agent import create_agent
-    agent = create_agent(model="openai:gpt-4o", tools=tools, deps=DepsType)
-    import asyncio
-    sim_context = SimContext(fmu_folder=str(Path("models/fmus")), notes=[])
-    sim_context.current_fmu = "PI_FOPDT_2"
-    result = asyncio.run(agent.run("What is the name of the FMU?", deps=StateDeps(sim_context)))
-    print(result)
-    storage = get_repr_store()
-    ctx = RunContext[StateDeps[SimContext]](
-        model="openai:gpt-4o",    
-        usage = result.usage,                        
-
-        deps=storage
-    )
-    try:
-        from control_toolbox.tools.signals import TimeRange
-        result = simulate_step_response(ctx, 
-            SimulationStepResponseProps(
-                fmu_name="PI_FOPDT_2",
-                start_time=0.0,
-                stop_time=1.0,
-                output_interval=0.1,
-            ), StepProps(
-                signal_name="input",
-                time_range=TimeRange(start=0.0, stop=1.0, sampling_time=0.1),
-                initial_value=0.0,
-                final_value=1.0,
-            )
-        )
-        id = result.repr_id
-        from devtools import debug
-        print(result)
-        full = storage.recreate(id)
-        debug(full)
-    except Exception as e:
-        print(f"Error simulating step response: {e}")
-        raise e
-    print(result)

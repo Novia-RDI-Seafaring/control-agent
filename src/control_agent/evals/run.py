@@ -11,7 +11,7 @@ load_dotenv(override=True)
 import logfire
 logfire.configure(token=os.getenv('LOGFIRE_WRITE_TOKEN'), send_to_logfire=False)
 logfire.instrument_pydantic_ai()
-logfire.instrument_openai()
+#logfire.instrument_openai()
 
 
 from control_agent.agent.agent import get_tools, OutputDataT, create_agent
@@ -20,7 +20,6 @@ from control_agent.agent.model import get_default_model
 from control_agent.evals.report import save_report
 from control_agent.evals.experiments import datasets # type: ignore
 from control_toolbox.config import set_fmu_dir
-from control_agent.agent.stored_model import get_repr_store, StoredModel, ModelStore
 from pydantic_ai.ag_ui import StateDeps
 from typer import Typer
 app = Typer()

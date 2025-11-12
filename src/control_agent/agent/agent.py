@@ -1,14 +1,6 @@
-from typing import Any, Type
-
-from pydantic_ai import Agent, Tool
-from pydantic_ai.models import Model, KnownModelName
-
-# System prompt with tuning method documentation
-from control_agent.agent.tools import get_tools
+from control_agent.agent.common import *
 from control_agent.agent.model import get_default_model
-from pydantic_ai._run_context import AgentDepsT
-from pydantic_ai.output import OutputDataT
-
+from control_agent.agent.tools import get_tools
 from control_agent.prompts import SYS_PROMPT as SYSTEM_PROMPT
 
 def create_agent(
