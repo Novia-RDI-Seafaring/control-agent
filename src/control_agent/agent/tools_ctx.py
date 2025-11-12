@@ -36,6 +36,7 @@ def look_at_plot(ctx: RunContext[StateDeps[SimContext]],
     except Exception as e:
         return ToolExecutionError(message=str(e))
     try:
+        print(f"will try to look at plot of signal: {signal_name}")
         data = ctx.deps.state.fmu.simulations[-1].data
         figures = plot_data(data)
         try:
