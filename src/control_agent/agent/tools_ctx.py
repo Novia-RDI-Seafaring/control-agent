@@ -74,10 +74,11 @@ def choose_fmu(ctx: RunContext[StateDeps[SimContext]],
     try:
         ctx.deps.state.current_fmu = fmu_name
         if fmu_name not in ctx.deps.state.fmus:
+            fmu_path = str(Path(ctx.deps.state.fmu_folder) / f"{fmu_name}.fmu")
             ctx.deps.state.fmus[fmu_name] = FmuContext(
                 fmu_name=fmu_name,
-                fmu_path=str(Path(ctx.deps.state.fmu_folder) / f"{fmu_name}.fmu"),
-                model_description=None,
+                fmu_path=fmu_path,
+                model_description=_get_model_description(fmu_path),
                 simulations=[],
                 lambda_tuning_checks=[],
                 zn_pid_tuning_checks=[]
