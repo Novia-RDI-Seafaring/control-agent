@@ -47,7 +47,7 @@ preferred_order = [
 def get_normal_agent_runner(output_model: Type[OutputDataT]) -> Callable[[str], Coroutine[Any, Any, OutputDataT]]:
     agent = create_agent(
         model=get_default_model(),
-        tools=get_tools(),
+        tools=get_tools_ctx(),
         output_type=output_model,
         max_retries=20,
     )

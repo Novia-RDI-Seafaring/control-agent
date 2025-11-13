@@ -6,7 +6,7 @@ from pydantic_evals.evaluators import (
     EvaluatorContext,
     EvaluationReason,
 )
-from control_agent.evals.utils import get_called_tools, get_tool_call_counts
+from control_agent.evals.utils import get_called_tools, get_tool_call_counts, get_successful_tool_call_counts
 from logging import getLogger
 
 logger = getLogger(__name__)
@@ -32,12 +32,16 @@ class RequiredToolUseEvaluator(Evaluator[object, object, object]):
     def evaluate(self, ctx: EvaluatorContext[object, object, object]) -> EvaluationReason:
         """Check that required tools were called and within max_runs limits"""
         called_tools = get_called_tools(ctx, self.agent_name)
-        tool_counts = get_tool_call_counts(ctx, self.agent_name)
+        # Use successful tool call counts (excludes ToolExecutionError results)
+        tool_counts = get_successful_tool_call_counts(ctx, self.agent_name)
+        # Also get total counts for logging
+        total_tool_counts = get_tool_call_counts(ctx, self.agent_name)
         
         logger.info(f"Expected required tools: {[t.name for t in self.required_tools]}")
         logger.info(f"Expected optional tools: {[t.name for t in self.optional_tools]}")
         logger.info(f"Actual called tools: {called_tools}")
-        logger.info(f"Tool call counts: {tool_counts}")
+        logger.info(f"Total tool call counts (including failures): {total_tool_counts}")
+        logger.info(f"Successful tool call counts (excluding failures): {tool_counts}")
         
         errors = []
         warnings = []
@@ -47,19 +51,34 @@ class RequiredToolUseEvaluator(Evaluator[object, object, object]):
             tool_name = tool_spec.name
             max_runs = tool_spec.max_runs or 1
             
+            # Check if tool was called at all (including failures)
             if tool_name not in called_tools:
                 errors.append(f"Required tool '{tool_name}' was not called")
                 continue
             
-            # Check max_runs limit
-            call_count = tool_counts.get(tool_name, 0)
-            if call_count > max_runs:
+            # Check max_runs limit using successful calls only
+            successful_count = tool_counts.get(tool_name, 0)
+            total_count = total_tool_counts.get(tool_name, 0)
+            
+            if successful_count > max_runs:
                 errors.append(
-                    f"Required tool '{tool_name}' was called {call_count} times, "
+                    f"Required tool '{tool_name}' was successfully called {successful_count} times, "
                     f"but max_runs is {max_runs}"
                 )
+            elif successful_count == 0 and total_count > 0:
+                # Tool was called but all calls failed
+                errors.append(
+                    f"Required tool '{tool_name}' was called {total_count} time(s) but all calls failed "
+                    f"(likely due to guardrail violations or errors)"
+                )
             else:
-                logger.info(f"Required tool '{tool_name}' called {call_count} time(s) (max: {max_runs})")
+                if total_count > successful_count:
+                    logger.info(
+                        f"Required tool '{tool_name}' called {total_count} time(s) total, "
+                        f"{successful_count} successful (max: {max_runs})"
+                    )
+                else:
+                    logger.info(f"Required tool '{tool_name}' called {successful_count} time(s) (max: {max_runs})")
         
         # Check optional tools (only log, don't fail)
         for tool_spec in self.optional_tools:
@@ -70,15 +89,23 @@ class RequiredToolUseEvaluator(Evaluator[object, object, object]):
                 logger.info(f"Optional tool '{tool_name}' was not called (this is OK)")
                 continue
             
-            # Check max_runs limit for optional tools
-            call_count = tool_counts.get(tool_name, 0)
-            if call_count > max_runs:
+            # Check max_runs limit for optional tools using successful calls
+            successful_count = tool_counts.get(tool_name, 0)
+            total_count = total_tool_counts.get(tool_name, 0)
+            
+            if successful_count > max_runs:
                 warnings.append(
-                    f"Optional tool '{tool_name}' was called {call_count} times, "
+                    f"Optional tool '{tool_name}' was successfully called {successful_count} times, "
                     f"but max_runs is {max_runs}"
                 )
             else:
-                logger.info(f"Optional tool '{tool_name}' called {call_count} time(s) (max: {max_runs})")
+                if total_count > successful_count:
+                    logger.info(
+                        f"Optional tool '{tool_name}' called {total_count} time(s) total, "
+                        f"{successful_count} successful (max: {max_runs})"
+                    )
+                else:
+                    logger.info(f"Optional tool '{tool_name}' called {successful_count} time(s) (max: {max_runs})")
         
         # If there are errors, fail
         if errors:

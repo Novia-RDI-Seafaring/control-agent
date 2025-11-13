@@ -13,7 +13,8 @@ dataset = Dataset[str, CaseResponse[LambdaTuningResponse], Any](
             evaluators=(
                 RequiredToolUseEvaluator(
                     required_tools=[
-                        ToolUseSpec(name="simulate_step_response", max_runs=1),
+                        # Allow up to 2 calls to account for guardrail failures/retries
+                        ToolUseSpec(name="simulate_step_response", max_runs=2),
                         ToolUseSpec(name="identify_fopdt_from_step", max_runs=1),
                         ToolUseSpec(name="lambda_tuning", max_runs=1)
                     ],
