@@ -20,6 +20,17 @@ established control loop (a real system or a simulated system).
    system. (The sustained oscillations corresponds to the system being on the
    stability limit.) This Kp value is denoted the ultimate (or critical) gain,
    K_u.
+   
+   **How to Identify Sustained Oscillations:**
+- Use `find_peaks` tool after each simulation to analyze the output signal
+- **Sustained oscillations** (what you need for Ku):
+  * At least 3-4 peaks detected
+  * Peak amplitudes remain approximately constant (within 10-20% variation)
+  * Peak periods are consistent (low variance in `average_peak_period`)
+  * This indicates the system is at the stability limit
+- **Growing oscillations**: Peak amplitudes increase over time → Kp is too high, reduce it
+- **Decaying oscillations**: Peak amplitudes decrease over time → Kp is too low, increase it
+- **No oscillations**: Fewer than 3 peaks → Kp is too low, increase it
 
 4. Measure the ultimate (or critical) period Pu of the sustained oscillations.
 
