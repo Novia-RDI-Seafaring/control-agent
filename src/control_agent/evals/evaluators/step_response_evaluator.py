@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, Any
+# from typing import Dict, Any  # Not used
 from control_agent.experiment_definitions.response_schema import CaseResponse
 from control_agent.experiment_definitions.response_schema import StepResponse
 from control_toolbox.tools.simulation import SimulationProps, simulate_step_response
@@ -9,12 +9,12 @@ from pydantic_evals.evaluators import (
     EvaluatorContext,
     EvaluationReason,
 )
-from control_agent import FOPDT
-from logging import getLogger
+# from control_agent import FOPDT  # Not used
+# from logging import getLogger  # Not used
 import numpy as np
 from pathlib import Path
 
-logger = getLogger(__name__)
+# logger = getLogger(__name__)  # Not used
 
 
 @dataclass
@@ -32,20 +32,45 @@ class StepResponseEvaluator(Evaluator[object, CaseResponse[StepResponse], object
     
     def evaluate(self, ctx: EvaluatorContext[object, CaseResponse[StepResponse], object]) -> EvaluationReason:
         """Compare identified parameters with ground truth"""
-        output = ctx.output.output
-
+        # Extract nested output: AgentRunResult -> CaseResponse -> StepResponse
+        output = ctx.output
+        if hasattr(output, 'output'):
+            output = output.output
+        if hasattr(output, 'output'):
+            output = output.output
+        
+        # Now output should be StepResponse
+        # # Debug: Check what we actually have
+        # output_type = type(output).__name__
+        # has_outputs = hasattr(output, 'outputs')
+        # has_signals = hasattr(output, 'signals')
+        
         # Find the "y" signal in the output
         y = None
-        for signal in output.outputs:
+        # Check both outputs and signals attributes
+        signals_list = []
+        if hasattr(output, 'outputs'):
+            signals_list = output.outputs or []
+        elif hasattr(output, 'signals'):
+            signals_list = output.signals or []
+        
+        for signal in signals_list:
             if signal.name == "y":
                 y = np.array(signal.values)
                 break
         
         if y is None:
-            available_signals = [s.name for s in output.outputs]
+            available_signals = [s.name for s in signals_list] if signals_list else []
+            # # Provide more detailed error message (debug code)
+            # debug_info = f"Type: {output_type}, has_outputs: {has_outputs}, has_signals: {has_signals}"
+            # if hasattr(output, 'outputs'):
+            #     debug_info += f", outputs length: {len(output.outputs)}"
+            # if hasattr(output, 'signals'):
+            #     debug_info += f", signals length: {len(output.signals)}"
             return EvaluationReason(
                 value=False,
                 reason=f"Output signal 'y' not found. Available signals: {available_signals}"
+                # reason=f"Output signal 'y' not found. Available signals: {available_signals}. Debug: {debug_info}"  # Debug version
             )
 
         # simulate to get ground truth
@@ -88,9 +113,9 @@ class StepResponseEvaluator(Evaluator[object, CaseResponse[StepResponse], object
             )
 
         # Ensure arrays have the same length for comparison
-        min_len = min(len(y), len(gt_y))
+        # min_len = min(len(y), len(gt_y))  # Not used, can check directly
 
-        if min_len == 0:
+        if len(y) == 0 or len(gt_y) == 0:
             return EvaluationReason(
                 value=False,
                 reason=f"Cannot compare empty arrays. y length: {len(y)}, gt_y length: {len(gt_y)}"
