@@ -5,12 +5,33 @@ from control_agent.evals.evaluators.step_response_evaluator import StepResponseE
 
 OutputDataT = CaseResponse[StepResponse]
 
+GT_MODE = False # False: open-loop, True: closed-loop
+GT_OUTPUT_INTERVAL = 0.1
+GT_START_TIME = 0.0
+GT_STOP_TIME = 20.0
+GT_START_VALUE = 0.0
+GT_FINAL_VALUE = 1.0
+RMSE_TOLERANCE = 0.05
+
+mode_map = {
+    True: "automatic",
+    False: "manual",
+}
+
+QUERY = (
+        f"""Simulate an closed-loop step response with input change from {GT_START_VALUE}
+        to {GT_FINAL_VALUE}. Set controller mode to {mode_map[GT_MODE]}. Use output sampling 
+        time 'output_interval' {GT_OUTPUT_INTERVAL} second and simulate on the time range from 
+        {GT_START_TIME} to {GT_STOP_TIME} seconds."""
+        )
+
 dataset = Dataset[str, CaseResponse[StepResponse], Any](
     name='open_loop_step',
     cases=[
         Case(
             name='open_loop_step',
-            inputs="Simulate an open-loop step response with input change from 0 to 1. Set controller mode to 'manual' and parameters Kp=1.0 and Ti=2.0. Use output_interval 0.1 second and maximum simulation time 20 seconds.",
+            inputs = QUERY.strip()
+            ,            
             expected_output=None,
             evaluators=(
                 EqualsExpected(),
@@ -24,15 +45,13 @@ dataset = Dataset[str, CaseResponse[StepResponse], Any](
                     ]
                 ),
                 StepResponseEvaluator(
-                    rmse_tolerance=0.1,
-                    gt_Kp=1.0,
-                    gt_Ti=2.0,
-                    gt_mode=False,
-                    gt_output_interval=0.1,
-                    gt_start_time=0.0,
-                    gt_stop_time=20.0,
-                    gt_start_value=0.0,
-                    gt_final_value=1.0
+                    rmse_tolerance=RMSE_TOLERANCE,
+                    gt_mode=GT_MODE,
+                    gt_output_interval=GT_OUTPUT_INTERVAL,
+                    gt_start_time=GT_START_TIME,
+                    gt_stop_time=GT_STOP_TIME,
+                    gt_start_value=GT_START_VALUE,
+                    gt_final_value=GT_FINAL_VALUE
                 )
             ),
         ),
