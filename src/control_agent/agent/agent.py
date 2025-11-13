@@ -1,6 +1,5 @@
 from control_agent.agent.common import *
 from control_agent.agent.model import get_default_model
-from control_agent.agent.tools import get_tools
 from control_agent.prompts import SYS_PROMPT as SYSTEM_PROMPT
 
 def create_agent(
@@ -8,8 +7,8 @@ def create_agent(
     max_retries: int = 1,
     name: str = "FMIAgent",
     deps: Type[AgentDepsT] = str,
+    tools: list[Tool[Any]] = [],
     output_type: Type[OutputDataT] = str,
-    tools: list[Tool[Any]] = get_tools(),
 ) -> Agent[AgentDepsT, OutputDataT]:
     """Create FMI agent with tools.
     

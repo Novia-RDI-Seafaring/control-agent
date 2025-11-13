@@ -7,6 +7,7 @@ requires-python = ">=3.13"
 dependencies = [
     "agent-control-toolbox>=0.1.0",
     "dash>=3.2.0",
+    "docstring-parser>=0.17.0",
     "fastapi>=0.120.1",
     "fmpy>=0.3.26",
     "logfire>=4.14.2",
