@@ -214,6 +214,29 @@ def find_rise_time(ctx: RunContext[StateDeps[SimContext]]) -> StateSnapshotEvent
         print(f"Error in find rise time: {e}")
         return ToolExecutionError(message=str(e))
 
+def find_overshoot(ctx: RunContext[StateDeps[SimContext]]) -> StateSnapshotEvent|ToolExecutionError:
+
+    try:
+        if len(ctx.deps.state.fmu.simulations) == 0:
+            return ToolExecutionError(message="No simulations have been run yet")
+    except Exception as e:
+        return ToolExecutionError(message=str(e))
+    try:
+            
+        data = ctx.deps.state.fmu.simulations[-1].data
+        overshoot_check = OvershootCheck(
+            data=_find_overshoot(data)
+        )
+        ctx.deps.state.fmu.simulations[-1].attributes.append(overshoot_check.data)
+        return StateSnapshotEvent(
+            type=EventType.STATE_SNAPSHOT,
+            snapshot=ctx.deps.state,
+        )
+
+    except Exception as e:
+        print(f"Error in find overshoot: {e}")
+        return ToolExecutionError(message=str(e))
+
 def find_characteristic_points(ctx: RunContext[StateDeps[SimContext]]) -> StateSnapshotEvent|ToolExecutionError:
     try:
         if len(ctx.deps.state.fmu.simulations) == 0:
@@ -400,6 +423,11 @@ def get_tools() -> list[Tool[Any]]:
         Tool(find_rise_time,
             name="find_rise_time",
             description=make_docstring(_find_rise_time, find_rise_time),
+            takes_ctx=True),
+
+        Tool(find_overshoot,
+            name="find_overshoot",
+            description=make_docstring(_find_overshoot, find_overshoot),
             takes_ctx=True),
 
         Tool(find_settling_time,

@@ -32,9 +32,10 @@ class StepResponse(BaseModel):
     outputs: List[Signal]
 
 class StepResponseAnalysisResponse(BaseModel):
+    signal_name: str
     rise_time: float
     settling_time: float
-    overshoot: float
+    overshoot_percent: float
 
 class SystemParameters(BaseModel):
     K: float

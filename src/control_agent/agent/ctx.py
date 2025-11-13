@@ -19,6 +19,9 @@ class InflectionCheck(BaseModel):
 class RiseTimeCheck(BaseModel):
     data: AttributesGroup
 
+class OvershootCheck(BaseModel):
+    data: AttributesGroup
+
 class PIDCheck(BaseModel):
     data: PIDParameters
 

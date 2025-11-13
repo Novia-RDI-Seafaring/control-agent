@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 # from typing import Dict, Any  # Not used
 from control_agent.experiment_definitions.response_schema import CaseResponse
-from control_agent.experiment_definitions.response_schema import StepResponse
+from control_agent.experiment_definitions.response_schema import StepResponseAnalysisResponse
 from control_toolbox.tools.simulation import SimulationProps, simulate_step_response
 from control_toolbox.tools.signals import StepProps, TimeRange
-from control_toolbox.tools.analysis import find_rise_time, find_settling_time, find_overshoot
+from control_toolbox.tools.analysis import find_rise_time, find_settling_time, find_overshoot, SettlingTimeProps
 from pydantic_evals.evaluators import (
     Evaluator,
     EvaluatorContext,
@@ -21,9 +21,9 @@ def _relative_error(x: float, y: float) -> float:
     return abs(x - y) / y if y != 0 else abs(x - y)
 
 @dataclass
-class StepResponseAnalysisEvaluator(Evaluator[object, CaseResponse[StepResponse], object]):
+class StepResponseAnalysisEvaluator(Evaluator[object, CaseResponse[StepResponseAnalysisResponse], object]):
     """Evaluate system identification results against ground truth FOPDT parameters"""
-    rmse_tolerance: float = 0.1
+    tolerance: float = 0.1
     gt_Kp: float = 1.0
     gt_Ti: float = 2.0
     gt_mode: bool = False
@@ -33,7 +33,7 @@ class StepResponseAnalysisEvaluator(Evaluator[object, CaseResponse[StepResponse]
     gt_start_value: float = 0.0
     gt_final_value: float = 1.0
     
-    def evaluate(self, ctx: EvaluatorContext[object, CaseResponse[StepResponse], object]) -> EvaluationReason:
+    def evaluate(self, ctx: EvaluatorContext[object, CaseResponse[StepResponseAnalysisResponse], object]) -> EvaluationReason:
         """Compare identified parameters with ground truth"""
         # Extract nested output: AgentRunResult -> CaseResponse -> StepResponse
         output = ctx.output
@@ -42,36 +42,30 @@ class StepResponseAnalysisEvaluator(Evaluator[object, CaseResponse[StepResponse]
         if hasattr(output, 'output'):
             output = output.output
 
+
+        if not isinstance(output, StepResponseAnalysisResponse):
+            return EvaluationReason(
+                value=False,
+                reason=f"Output is not of type StepResponseAnalysisResponse. Got {type(output).__name__!r}."
+            )
+
+        # check that the agent retruned attributed for the correct signal
+        signal_name = output.signal_name
+        if signal_name != "y":
+            return EvaluationReason(
+                value=False,
+                reason=f"Returned attributes for the wrong signal. Attributes for '{signal_name}' was returned isntead of for 'y'."
+            )       
+
         rise_time = output.rise_time
         settling_time = output.settling_time
-        overshoot = output.overshoot
+        overshoot = output.overshoot_percent
+
 
         #########################################################
         # CALCUALTE GROUND TRUTH VALUES
         #########################################################
         
-        # Find the "y" signal in the output
-        y = None
-        # Check both outputs and signals attributes
-        signals_list = []
-        if hasattr(output, 'outputs'):
-            signals_list = output.outputs or []
-        elif hasattr(output, 'signals'):
-            signals_list = output.signals or []
-        
-        for signal in signals_list:
-            if signal.name == "y":
-                y = np.array(signal.values)
-                break
-        
-        if y is None:
-            available_signals = [s.name for s in signals_list] if signals_list else []
-            return EvaluationReason(
-                value=False,
-                reason=f"Output signal 'y' not found. Available signals: {available_signals}"
-                # reason=f"Output signal 'y' not found. Available signals: {available_signals}. Debug: {debug_info}"  # Debug version
-            )
-
         # simulate to get ground truth
         gt_simulation_props = SimulationProps(
             start_time=self.gt_start_time,
@@ -97,16 +91,36 @@ class StepResponseAnalysisEvaluator(Evaluator[object, CaseResponse[StepResponse]
             step_props=gt_step_props
         )
 
+
         # get tise time
-        gt_rise_time = find_rise_time(gt_step_response)
-        gt_settling_time = find_settling_time(gt_step_response)
-        gt_overshoot = find_overshoot(gt_step_response)
-      
+        results_rise_time = find_rise_time(gt_step_response)
+
+        results_settling_time = find_settling_time(gt_step_response, props=SettlingTimeProps())
+
+        results_overshoot = find_overshoot(gt_step_response)
+
+        for attribute in results_rise_time.attributes:
+            if attribute.signal_name == "y":
+                gt_rise_time = attribute.rise_time 
+                break
+
+        for attribute in results_settling_time.attributes:
+            if attribute.signal_name == "y":
+                gt_settling_time = attribute.settling_time 
+                break
+        
+        for attribute in results_overshoot.attributes:
+            if attribute.signal_name == "y":
+                gt_overshoot = attribute.percent 
+                break
+
         #########################################################
         # EVALUATION
         #########################################################
         rise_time_error = _relative_error(rise_time, gt_rise_time)
+
         settling_error = _relative_error(settling_time, gt_settling_time)
+
         overshoot_error = _relative_error(overshoot, gt_overshoot)
         
         # Check if all parameters are within tolerance
@@ -115,9 +129,9 @@ class StepResponseAnalysisEvaluator(Evaluator[object, CaseResponse[StepResponse]
                 value=True,
                 reason=(
                     f"System parameters match ground truth. "
-                    "   - Rise time: {rise_time:.3f} (expected {gt_rise_time:.3f}), "
-                    "   - Settling time: {settling_time:.3f} (expected {gt_settling_time:.3f}), "
-                    "   - Overshoot: {overshoot:.3f} (expected {gt_overshoot:.3f}) "
+                    f"   - Rise time: {rise_time:.3f} (expected {gt_rise_time:.3f}), "
+                    f"   - Settling time: {settling_time:.3f} (expected {gt_settling_time:.3f}), "
+                    f"   - Overshoot: {overshoot:.3f} (expected {gt_overshoot:.3f}) "
                 )
             )
         else:
@@ -125,8 +139,8 @@ class StepResponseAnalysisEvaluator(Evaluator[object, CaseResponse[StepResponse]
                 value=False,
                 reason=(
                     f"Parameter errors exceed tolerance. "
-                    "   - Rise time: {rise_time_error:.2%}, "
-                    "   - Settling time: {settling_error:.2%}, "
-                    "   - Overshoot: {overshoot_error:.2%} "
+                    f"   - Rise time: {rise_time:.3f} (expected {gt_rise_time:.3f}), relative error {rise_time_error:.3f}"
+                    f"   - Settling time: {settling_time:.3f} (expected {gt_settling_time:.3f}), relative error {settling_error:.3f}"
+                    f"   - Overshoot: {overshoot:.3f} (expected {gt_overshoot:.3f}), relative error {overshoot_error:.3f}"
                 )
             )
