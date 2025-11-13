@@ -31,6 +31,11 @@ class StepResponse(BaseModel):
     inputs: List[Signal]
     outputs: List[Signal]
 
+class StepResponseAnalysisResponse(BaseModel):
+    rise_time: float
+    settling_time: float
+    overshoot: float
+
 class SystemParameters(BaseModel):
     K: float
     T: float
