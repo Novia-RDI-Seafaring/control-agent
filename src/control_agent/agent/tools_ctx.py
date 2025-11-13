@@ -236,6 +236,25 @@ def find_overshoot(ctx: RunContext[StateDeps[SimContext]]) -> StateSnapshotEvent
     except Exception as e:
         print(f"Error in find overshoot: {e}")
         return ToolExecutionError(message=str(e))
+        
+def oscillation_analysis(ctx: RunContext[StateDeps[SimContext]]) -> StateSnapshotEvent|ToolExecutionError:
+    try:
+        if len(ctx.deps.state.fmu.simulations) == 0:
+            return ToolExecutionError(message="No simulations have been run yet")
+    except Exception as e:
+        return ToolExecutionError(message=str(e))
+    try:
+        data = ctx.deps.state.fmu.simulations[-1].data
+        oscillation_result = _oscillation_analysis(data)
+        ctx.deps.state.fmu.simulations[-1].attributes.append(oscillation_result)
+        return StateSnapshotEvent(
+            type=EventType.STATE_SNAPSHOT,
+            snapshot=ctx.deps.state,
+        )
+    
+    except Exception as e:
+        print(f"Error in oscillation analysis: {e}")
+        return ToolExecutionError(message=str(e))
 
 def find_characteristic_points(ctx: RunContext[StateDeps[SimContext]]) -> StateSnapshotEvent|ToolExecutionError:
     try:
@@ -428,6 +447,11 @@ def get_tools() -> list[Tool[Any]]:
         Tool(find_overshoot,
             name="find_overshoot",
             description=make_docstring(_find_overshoot, find_overshoot),
+            takes_ctx=True),
+
+        Tool(oscillation_analysis,
+            name="oscillation_analysis",
+            description=make_docstring(_oscillation_analysis, oscillation_analysis),
             takes_ctx=True),
 
         Tool(find_settling_time,
