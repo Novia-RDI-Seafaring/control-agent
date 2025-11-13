@@ -14,7 +14,7 @@ logfire.instrument_pydantic_ai()
 #logfire.instrument_openai()
 
 
-from control_agent.agent.agent import get_tools, OutputDataT, create_agent
+from control_agent.agent.agent import OutputDataT, create_agent
 from control_agent.agent.tools_ctx import get_tools as get_tools_ctx
 from control_agent.agent.model import get_default_model
 from control_agent.evals.report import save_report

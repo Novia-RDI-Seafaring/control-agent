@@ -1,7 +1,7 @@
 from control_agent.agent.common import *
 from control_agent.agent.ctx import *
 logger = getLogger(__name__)
-from control_agent.agent.tools.docstrings import make_docstring
+from control_agent.agent.docstrings import make_docstring
 console = Console()
 
 from typing import Literal
@@ -343,7 +343,7 @@ def zn_pid_tuning(ctx: RunContext[StateDeps[SimContext]],
 
  
 ## add rise time,  and lam
-from control_agent.agent.tools.docstrings import make_docstring
+from control_agent.agent.docstrings import make_docstring
 # Build the tool list with stored I/O
 def get_tools() -> list[Tool[Any]]:
     return [
