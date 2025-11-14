@@ -244,6 +244,19 @@ def evaluate(experiment: str="all", ctx_tools: bool  = False, save: bool = False
             if save:
                 from control_agent.evals.export_results import combine_all_experiments
                 combine_all_experiments()
+        elif "," in experiment:
+            # Multiple experiments specified as comma-separated list
+            experiment_names = [name.strip() for name in experiment.split(",")]
+            for exp_name in experiment_names:
+                if exp_name in datasets:
+                    run_experiment(exp_name, ctx_tools, save)
+                else:
+                    print(f"Warning: Experiment '{exp_name}' not found. Skipping.")
+            
+            # If saving, combine the specified experiments
+            if save:
+                from control_agent.evals.export_results import combine_all_experiments
+                combine_all_experiments()
         else:
             run_experiment(experiment, ctx_tools, save)
 
