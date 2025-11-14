@@ -22,21 +22,9 @@ mode_map = {
 
 QUERY = (
         f"""Perform multiple repeated step-response simulation experiments to tune a PI controller using the Ziegler-Nichols method.
-        Get useful instructions from available resources to better understand the tuning procedure.
-        
-        Experiment procedure:
-        0. Set controller to 'automatic' mode and set Ti = float("inf").
-        1. run simulate_step_response Kp = 1.0
-        2. run oscillation_analysis
-        3. If iscillations are decreasing, icrease Kp += 0.4, if oscillations are increasing, decrease Kp -= 0.1
-        4. run oscillation_analysis
-        REPEAT until sustained oscillations are obtained.
-        X. When sustained iscillations are obtained, run zn_pid_tuning tool with the ultimate gain Ku and period Pu.
-        Return Kp, Ti, Td
-        
-         -The ultimate gain Ku=Kp when sustained oscillations are obtained.
-         -The ultimate period Pu is the average period time between peaks when sustained oscillations are obtained.
 
+        Change the input value from {GT_START_VALUE} to {GT_FINAL_VALUE} and simulate on the time interval [{GT_START_TIME}, {GT_STOP_TIME}].
+        Use output_interval = {GT_OUTPUT_INTERVAL}. Get informaiton about the procedure from avilable resopurces before simulating.
         """
         )
 

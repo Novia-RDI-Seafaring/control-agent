@@ -2,7 +2,7 @@ from dataclasses import dataclass
 # from typing import Dict, Any  # Not used
 from control_agent.experiment_definitions.response_schema import CaseResponse
 from control_agent.experiment_definitions.response_schema import StepResponse
-from control_toolbox.tools.simulation import SimulationProps, simulate_step_response
+from control_toolbox.tools.simulation import SimulationStepResponseProps, simulate_step_response
 from control_toolbox.tools.signals import StepProps, TimeRange
 from pydantic_evals.evaluators import (
     Evaluator,
@@ -74,7 +74,7 @@ class StepResponseEvaluator(Evaluator[object, CaseResponse[StepResponse], object
             )
 
         # simulate to get ground truth
-        gt_simulation_props = SimulationProps(
+        gt_simulation_props = SimulationStepResponseProps(
             start_time=self.gt_start_time,
             stop_time=self.gt_stop_time,
             output_interval=self.gt_output_interval,

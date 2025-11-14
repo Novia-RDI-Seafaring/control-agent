@@ -131,6 +131,8 @@ def simulate_step_response(ctx: RunContext[StateDeps[SimContext]],
             fopdt_checks=[],
             attributes=[]
         ))
+        # [PATCH] Keep only the last simulation results to prevent context bloat
+        #ctx.deps.state.fmu.simulations = ctx.deps.state.fmu.simulations[-1:]
         return StateSnapshotEvent(
             type=EventType.STATE_SNAPSHOT,
             snapshot=ctx.deps.state,
@@ -244,7 +246,9 @@ def oscillation_analysis(ctx: RunContext[StateDeps[SimContext]]) -> StateSnapsho
     except Exception as e:
         return ToolExecutionError(message=str(e))
     try:
+        console.print(f"simulate step response:")
         data = ctx.deps.state.fmu.simulations[-1].data
+        #console.print(data)
         oscillation_result = _oscillation_analysis(data)
         ctx.deps.state.fmu.simulations[-1].attributes.append(oscillation_result)
         return StateSnapshotEvent(

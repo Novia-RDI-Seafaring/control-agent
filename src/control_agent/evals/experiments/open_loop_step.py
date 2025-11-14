@@ -19,7 +19,7 @@ mode_map = {
 }
 
 QUERY = (
-        f"""Simulate an closed-loop step response with input change from {GT_START_VALUE}
+        f"""Simulate an closed-loop step response with input step change from {GT_START_VALUE}
         to {GT_FINAL_VALUE}. Set controller mode to {mode_map[GT_MODE]}. Use output sampling 
         time 'output_interval' {GT_OUTPUT_INTERVAL} second and simulate on the time range from 
         {GT_START_TIME} to {GT_STOP_TIME} seconds."""

@@ -45,7 +45,7 @@ dataset = Dataset[str, CaseResponse[StepResponse], Any](
                     ]
                 ),
                 StepResponseEvaluator(
-                    rmse_tolerance=0.1,
+                    rmse_tolerance=RMSE_TOLERANCE,
                     gt_Kp=GT_KP,
                     gt_Ti=GT_TI,
                     gt_mode=GT_MODE,
