@@ -1,4 +1,6 @@
 # control-agent
+An AI agent for performing control-oriented simulation tasks
+
 ## Features
 
 - The package **`mcp-fmi-ecc26.zn`** contains methods that return *ground-truth tuning parameters* for the **Ziegler–Nichols** method.  
