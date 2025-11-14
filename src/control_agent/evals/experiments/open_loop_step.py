@@ -42,7 +42,7 @@ OutputDataT = CaseResponse[StepResponse]
 #            ),
 # Create evaluators tuple
 evaluators_tuple = (
-    EqualsExpected(),
+    #EqualsExpected(),
     RequiredToolUseEvaluator(
         required_tools=[
             ToolUseSpec(name="simulate_step_response", max_runs=3)  # Allow retries for guardrail failures

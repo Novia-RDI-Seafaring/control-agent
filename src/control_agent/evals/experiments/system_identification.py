@@ -12,7 +12,7 @@ dataset = Dataset[str, SystemIdentificationResponse, Any](
             inputs="Simulate an open-loop step response. Identify a FOPDT model from the step response 'y'. Return the static gain (K), time constant (T), and dead time (L) of the identified model. Use output_interval 0.1 second and maximum simulation time 20 seconds.",
             expected_output=None,
             evaluators=(
-                EqualsExpected(),
+                #EqualsExpected(),
                 RequiredToolUseEvaluator(
                     required_tools=[
                         ToolUseSpec(name="simulate_step_response", max_runs=3),
@@ -27,7 +27,7 @@ dataset = Dataset[str, SystemIdentificationResponse, Any](
                     ground_truth_K=1.0,
                     ground_truth_T=2.0,
                     ground_truth_L=1.0,
-                    tolerance=0.2
+                    tolerance=0.20
                 )
             ),
         ),

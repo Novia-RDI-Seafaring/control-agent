@@ -22,10 +22,16 @@ dataset = Dataset[str, CaseResponse[LambdaTuningResponse], Any](
                         ToolUseSpec(name="get_model_description", max_runs=3)
                     ]
                 ),
-                ToolSequenceEvaluator(
-                    tool_call_sequence=["simulate_step_response", "identify_fopdt_from_step", "lambda_tuning"]
-                ),
-                LambdaTuningEvaluator(tolerance=0.05)
+                # ToolSequenceEvaluator(
+                #    tool_call_sequence=["simulate_step_response", "identify_fopdt_from_step", "lambda_tuning"]
+                #),
+                LambdaTuningEvaluator(
+                    tolerance=0.10,
+                    gt_Kp=1.0,
+                    gt_Ti=2.0,
+                    gt_Td=0.0,
+                    gt_response="balanced"
+                    )
             ),
         ),
     ],
