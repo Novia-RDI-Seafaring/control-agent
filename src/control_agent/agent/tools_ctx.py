@@ -6,6 +6,7 @@ logger = getLogger(__name__)
 console = Console()
 
 from typing import Literal
+from control_agent.experiment_definitions.response_schema import StepResponse, Signal
 def control_help(ctx: RunContext[StateDeps[SimContext]], topic:Literal["fopdt_pi_description", "keywords", "lambda_tuning", "zn_pid_tuning", "seaborg"]) -> str:
     """
     Provides detailed documentation on control tuning methods.
@@ -79,6 +80,47 @@ def look_at_plot(ctx: RunContext[StateDeps[SimContext]],
     except Exception as e:
         return ToolExecutionError(message=str(e))
 
+
+def get_step_response_data(ctx: RunContext[StateDeps[SimContext]]) -> StepResponse|ToolExecutionError:
+    """
+    Extract the latest simulation data as StepResponse format.
+    Use this tool to get the simulation results in the format required for the output.
+    Returns timestamps, inputs, and outputs signals from the most recent simulation.
+    """
+    try:
+        if len(ctx.deps.state.fmu.simulations) == 0:
+            return ToolExecutionError(message="No simulations have been run yet")
+        data = ctx.deps.state.fmu.simulations[-1].data
+        
+        # Extract timestamps
+        timestamps = data.timestamps if hasattr(data, 'timestamps') and data.timestamps else []
+        
+        # Extract signals - DataModel has 'signals' attribute
+        signals = data.signals if hasattr(data, 'signals') and data.signals else []
+        
+        # Separate inputs and outputs
+        inputs = []
+        outputs = []
+        
+        for signal in signals:
+            signal_obj = Signal(name=signal.name, values=signal.values if hasattr(signal, 'values') else [])
+            # Typically 'u' or 'input' is input, 'y' or 'output' is output
+            if signal.name.lower() in ['u', 'input', 'control']:
+                inputs.append(signal_obj)
+            elif signal.name.lower() in ['y', 'output', 'plant']:
+                outputs.append(signal_obj)
+            else:
+                # Default to output if unclear
+                outputs.append(signal_obj)
+        
+        return StepResponse(
+            timestamps=timestamps,
+            inputs=inputs,
+            outputs=outputs
+        )
+    except Exception as e:
+        console.print(f"Error extracting step response data: {e}")
+        return ToolExecutionError(message=str(e))
 
 def get_fmu_names(ctx: RunContext[StateDeps[SimContext]]) -> List[str]:
     """
@@ -369,6 +411,50 @@ def find_rise_time(ctx: RunContext[StateDeps[SimContext]]) -> StateSnapshotEvent
         print(f"Error in find rise time: {e}")
         return ToolExecutionError(message=str(e))
 
+def find_overshoot(ctx: RunContext[StateDeps[SimContext]]) -> StateSnapshotEvent|ToolExecutionError:
+
+    try:
+        if len(ctx.deps.state.fmu.simulations) == 0:
+            return ToolExecutionError(message="No simulations have been run yet")
+    except Exception as e:
+        return ToolExecutionError(message=str(e))
+    try:
+            
+        data = ctx.deps.state.fmu.simulations[-1].data
+        overshoot_check = OvershootCheck(
+            data=_find_overshoot(data)
+        )
+        ctx.deps.state.fmu.simulations[-1].attributes.append(overshoot_check.data)
+        return StateSnapshotEvent(
+            type=EventType.STATE_SNAPSHOT,
+            snapshot=ctx.deps.state,
+        )
+
+    except Exception as e:
+        print(f"Error in find overshoot: {e}")
+        return ToolExecutionError(message=str(e))
+        
+def oscillation_analysis(ctx: RunContext[StateDeps[SimContext]]) -> StateSnapshotEvent|ToolExecutionError:
+    try:
+        if len(ctx.deps.state.fmu.simulations) == 0:
+            return ToolExecutionError(message="No simulations have been run yet")
+    except Exception as e:
+        return ToolExecutionError(message=str(e))
+    try:
+        console.print(f"simulate step response:")
+        data = ctx.deps.state.fmu.simulations[-1].data
+        #console.print(data)
+        oscillation_result = _oscillation_analysis(data)
+        ctx.deps.state.fmu.simulations[-1].attributes.append(oscillation_result)
+        return StateSnapshotEvent(
+            type=EventType.STATE_SNAPSHOT,
+            snapshot=ctx.deps.state,
+        )
+    
+    except Exception as e:
+        print(f"Error in oscillation analysis: {e}")
+        return ToolExecutionError(message=str(e))
+
 def find_characteristic_points(ctx: RunContext[StateDeps[SimContext]]) -> StateSnapshotEvent|ToolExecutionError:
     """
     Finds the characteristic points of step responses from the most recent simulation.
@@ -626,6 +712,11 @@ def get_tools() -> list[Tool[Any]]:
             description=look_at_plot.__doc__,
             takes_ctx=True),
 
+        Tool(get_step_response_data,
+            name="get_step_response_data",
+            description=get_step_response_data.__doc__,
+            takes_ctx=True),
+
         Tool(maybe_guard(choose_fmu, "choose_fmu"),    
             name="choose_fmu",
             description=choose_fmu.__doc__,
@@ -663,6 +754,16 @@ def get_tools() -> list[Tool[Any]]:
         Tool(find_rise_time,
             name="find_rise_time",
             description=find_rise_time.__doc__,
+            takes_ctx=True),
+
+        Tool(find_overshoot,
+            name="find_overshoot",
+            description=make_docstring(_find_overshoot, find_overshoot),
+            takes_ctx=True),
+
+        Tool(oscillation_analysis,
+            name="oscillation_analysis",
+            description=make_docstring(_oscillation_analysis, oscillation_analysis),
             takes_ctx=True),
 
         Tool(find_settling_time,

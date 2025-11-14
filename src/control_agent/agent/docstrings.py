@@ -62,7 +62,7 @@ def make_docstring(
     import json
     schema_generator = GenerateToolJsonSchema()
     og_scema = function_schema( external_fn, GenerateToolJsonSchema, takes_ctx=_takes_ctx(external_fn))
-    print(json.dumps(og_scema.json_schema, indent=4))
+    # print(json.dumps(og_scema.json_schema, indent=4))
 
     og_props = og_scema.json_schema.get("properties", {})
 

@@ -39,8 +39,10 @@ from control_toolbox.tools.simulation import simulate as _simulate
 from control_toolbox.tools.analysis import find_inflection_point as _find_inflection_point
 from control_toolbox.tools.analysis import find_characteristic_points as _find_characteristic_points
 from control_toolbox.tools.analysis import find_peaks as _find_peaks
+from control_toolbox.tools.analysis import oscillation_analysis as _oscillation_analysis
 from control_toolbox.tools.analysis import find_settling_time as _find_settling_time
 from control_toolbox.tools.analysis import find_rise_time as _find_rise_time
+from control_toolbox.tools.analysis import find_overshoot as _find_overshoot
 from control_toolbox.tools.pid_tuning import lambda_tuning as _lambda_tuning
 from control_toolbox.tools.pid_tuning import zn_pid_tuning as _zn_pid_tuning
 from control_toolbox.tools.plotting import plot_data
@@ -78,7 +80,7 @@ __all__ = [
     'SettlingTimeProps', 'SimulationStepResponseProps', 'StepProps', 'FindPeaksProps',
     # control_toolbox functions/tools (internal names)
     '_get_fmu_names', '_get_model_description', '_identify_fopdt_from_step', '_simulate_step_response', '_simulate',
-    '_find_inflection_point', '_find_characteristic_points', '_find_peaks', '_find_settling_time', '_find_rise_time',
+    '_find_inflection_point', '_find_characteristic_points', '_find_peaks', '_find_settling_time', '_find_rise_time', '_find_overshoot', '_oscillation_analysis',
     '_lambda_tuning', '_zn_pid_tuning',
     'plot_data',
     # openai
