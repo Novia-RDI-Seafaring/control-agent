@@ -1,4 +1,4 @@
-# mcp-fmi-ecc26
+# control-agent
 ## Features
 
 - The package **`mcp-fmi-ecc26.zn`** contains methods that return *ground-truth tuning parameters* for the **Ziegler–Nichols** method.  
