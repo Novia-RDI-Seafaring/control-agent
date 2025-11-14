@@ -45,11 +45,11 @@ evaluators_tuple = (
     EqualsExpected(),
     RequiredToolUseEvaluator(
         required_tools=[
-            ToolUseSpec(name="simulate_step_response", max_runs=5)  # Allow retries for guardrail failures
+            ToolUseSpec(name="simulate_step_response", max_runs=3)  # Allow retries for guardrail failures
         ],
         optional_tools=[
-            ToolUseSpec(name="get_fmu_names", max_runs=1),
-            ToolUseSpec(name="get_model_description", max_runs=1)
+            ToolUseSpec(name="get_fmu_names", max_runs=3),
+            ToolUseSpec(name="get_model_description", max_runs=3)
         ]
     ),
     StepResponseEvaluator(

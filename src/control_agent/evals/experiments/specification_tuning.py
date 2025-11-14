@@ -37,13 +37,13 @@ dataset = Dataset[str, CaseResponse[StepResponse], Any](
             evaluators=(
                 RequiredToolUseEvaluator(
                     required_tools=[
-                        ToolUseSpec(name="simulate_step_response", max_runs=1),
-                        ToolUseSpec(name="find_rise_time", max_runs=1),
-                        ToolUseSpec(name="find_overshoot", max_runs=1),
+                        ToolUseSpec(name="simulate_step_response", max_runs=10),
+                        ToolUseSpec(name="find_rise_time", max_runs=10),
+                        ToolUseSpec(name="find_overshoot", max_runs=10),
                     ],
                     optional_tools=[
-                        ToolUseSpec(name="get_fmu_names", max_runs=1),
-                        ToolUseSpec(name="get_model_description", max_runs=1)
+                        ToolUseSpec(name="get_fmu_names", max_runs=3),
+                        ToolUseSpec(name="get_model_description", max_runs=3)
                     ]
                 ),
             ),
