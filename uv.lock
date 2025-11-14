@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 2
 requires-python = ">=3.13"
 
 [[package]]
@@ -683,6 +683,7 @@ dependencies = [
     { name = "logfire" },
     { name = "matplotlib" },
     { name = "numpy" },
+    { name = "pandas" },
     { name = "plotly" },
     { name = "pydantic" },
     { name = "pydantic-ai" },
@@ -706,6 +707,7 @@ requires-dist = [
     { name = "logfire", specifier = ">=4.14.2" },
     { name = "matplotlib", specifier = ">=3.10.7" },
     { name = "numpy", specifier = ">=2.3.3" },
+    { name = "pandas", specifier = ">=2.2.0" },
     { name = "plotly", specifier = ">=6.3.1" },
     { name = "pydantic", specifier = ">=2.12.0" },
     { name = "pydantic-ai", specifier = ">=1.7.0" },

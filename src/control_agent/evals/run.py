@@ -16,8 +16,10 @@ logfire.instrument_pydantic_ai()
 
 from control_agent.agent.agent import OutputDataT, create_agent
 from control_agent.agent.tools_ctx import get_tools as get_tools_ctx
+from control_agent.agent.tools import get_tools
 from control_agent.agent.model import get_default_model
 from control_agent.evals.report import save_report
+from control_agent.evals.export_results import export_results_to_csv
 from control_agent.evals.experiments import datasets # type: ignore
 from control_toolbox.config import set_fmu_dir
 from pydantic_ai.ag_ui import StateDeps
@@ -171,6 +173,10 @@ def run_experiment(name: str, ctx_tools: bool = False, save: bool = False) -> No
 
         else:
             dataset, OutputDataT = datasets[name] # type: ignore
+            # Debug: Print evaluators immediately after getting from dict
+            if dataset.cases:
+                evaluator_names = [type(e).__name__ for e in dataset.cases[0].evaluators]
+                console.print(f"[yellow][DEBUG] Evaluators immediately after datasets[{name}]: {evaluator_names}[/yellow]")
             results_keeper: Dict[str, Any] = {}
             ctx_keeper: Dict[str, Any] = {}
             if not ctx_tools:
@@ -183,12 +189,29 @@ def run_experiment(name: str, ctx_tools: bool = False, save: bool = False) -> No
                 note = f"Tools have access to data via stored model"
                 _key = f"{name}_data_in_stored_model"
 
+            # Debug: Print evaluator info BEFORE evaluation
+            if dataset.cases:
+                evaluator_names = [type(e).__name__ for e in dataset.cases[0].evaluators]
+                evaluator_types = [type(e) for e in dataset.cases[0].evaluators]
+                console.print(f"[yellow][DEBUG] Evaluators in dataset BEFORE eval: {evaluator_names}[/yellow]")
+                console.print(f"[yellow][DEBUG] Evaluator types: {evaluator_types}[/yellow]")
+                console.print(f"[yellow][DEBUG] Evaluator count: {len(dataset.cases[0].evaluators)}[/yellow]")
+            
             report = dataset.evaluate_sync(runner) # type: ignore
             #console.print(f"[debug] Report has {len(report.cases)} cases, {len(report.failures) if hasattr(report, 'failures') else 0} failures")
+            # Debug: Print evaluator info AFTER evaluation
+            if report.cases:
+                case = report.cases[0]
+                assertion_names = list(case.assertions.keys())
+                console.print(f"[yellow][DEBUG] Assertions in report AFTER eval: {assertion_names}[/yellow]")
             print_report(report, name, note, results_keeper, ctx_keeper)
             # Save the report
             if save:
                 save_report(_key, report)
+                # Export to CSV and pickle for analysis
+                csv_path, pickle_path = export_results_to_csv(report, name, results_keeper)
+                console.print(f"[green]Results exported to CSV: {csv_path}[/green]")
+                console.print(f"[green]Results exported to pickle: {pickle_path}[/green]")
             else:
                 console.print(f"[dim]Note: Report not saved. Use --save flag to save the report.[/dim]")
         
@@ -213,8 +236,14 @@ def evaluate(experiment: str="all", ctx_tools: bool  = False, save: bool = False
 
             
         if experiment == "all":
-            for experiment in preferred_order + [k for k in datasets.keys() if k not in preferred_order]:
-                run_experiment(experiment, ctx_tools, save)
+            experiment_names = preferred_order + [k for k in datasets.keys() if k not in preferred_order]
+            for exp_name in experiment_names:
+                run_experiment(exp_name, ctx_tools, save)
+            
+            # If saving, also create a combined DataFrame with all experiments
+            if save:
+                from control_agent.evals.export_results import combine_all_experiments
+                combine_all_experiments()
         else:
             run_experiment(experiment, ctx_tools, save)
 

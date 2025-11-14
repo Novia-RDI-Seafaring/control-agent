@@ -5,6 +5,7 @@ from control_agent.agent.docstrings import make_docstring
 console = Console()
 
 from typing import Literal
+from control_agent.experiment_definitions.response_schema import StepResponse, Signal
 def control_help(ctx: RunContext[StateDeps[SimContext]], topic:Literal["fopdt_pi_description", "keywords", "lambda_tuning", "zn_pid_tuning", "seaborg"]) -> str:
     """
     Provides help on control tuning methods.
@@ -60,6 +61,47 @@ def look_at_plot(ctx: RunContext[StateDeps[SimContext]],
     except Exception as e:
         return ToolExecutionError(message=str(e))
 
+
+def get_step_response_data(ctx: RunContext[StateDeps[SimContext]]) -> StepResponse|ToolExecutionError:
+    """
+    Extract the latest simulation data as StepResponse format.
+    Use this tool to get the simulation results in the format required for the output.
+    Returns timestamps, inputs, and outputs signals from the most recent simulation.
+    """
+    try:
+        if len(ctx.deps.state.fmu.simulations) == 0:
+            return ToolExecutionError(message="No simulations have been run yet")
+        data = ctx.deps.state.fmu.simulations[-1].data
+        
+        # Extract timestamps
+        timestamps = data.timestamps if hasattr(data, 'timestamps') and data.timestamps else []
+        
+        # Extract signals - DataModel has 'signals' attribute
+        signals = data.signals if hasattr(data, 'signals') and data.signals else []
+        
+        # Separate inputs and outputs
+        inputs = []
+        outputs = []
+        
+        for signal in signals:
+            signal_obj = Signal(name=signal.name, values=signal.values if hasattr(signal, 'values') else [])
+            # Typically 'u' or 'input' is input, 'y' or 'output' is output
+            if signal.name.lower() in ['u', 'input', 'control']:
+                inputs.append(signal_obj)
+            elif signal.name.lower() in ['y', 'output', 'plant']:
+                outputs.append(signal_obj)
+            else:
+                # Default to output if unclear
+                outputs.append(signal_obj)
+        
+        return StepResponse(
+            timestamps=timestamps,
+            inputs=inputs,
+            outputs=outputs
+        )
+    except Exception as e:
+        console.print(f"Error extracting step response data: {e}")
+        return ToolExecutionError(message=str(e))
 
 def get_fmu_names(ctx: RunContext[StateDeps[SimContext]]) -> List[str]:
     folder = ctx.deps.state.fmu_folder
@@ -407,6 +449,11 @@ def get_tools() -> list[Tool[Any]]:
         Tool(look_at_plot,
             name="look_at_signal_plot",
             description=look_at_plot.__doc__,
+            takes_ctx=True),
+
+        Tool(get_step_response_data,
+            name="get_step_response_data",
+            description=get_step_response_data.__doc__,
             takes_ctx=True),
 
         Tool(choose_fmu,    
