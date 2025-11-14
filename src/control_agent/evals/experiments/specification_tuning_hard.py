@@ -26,15 +26,14 @@ mode_map = {
 QUERY = (
         f"""Perform simulated experiments to determine PI-controller parameters Kp and Ti such that 
         the closed-loop system has a rise time less than {GT_RISE_TIME} seconds and a maximum overshoot less than {GT_OVERSHOOT} (10%).
-        Start with Kp = 1.7 and Ti = 3.0, and incrementally adjust Kp until the rise time and overshoot specifications are met. 
-        Return the parameters that satisfy the specifications."""
+        """
         )
 
 dataset = Dataset[str, CaseResponse[SpecificaitonTuningResponse], Any](
-    name='specification_tuning',
+    name='specification_tuning_hard',
     cases=[
         Case(
-            name='specification_tuning',
+            name='specification_tuning_hard',
             inputs= QUERY.strip(),
             expected_output=None,
             evaluators=[

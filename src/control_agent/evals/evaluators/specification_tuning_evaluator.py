@@ -1,145 +1,109 @@
 from dataclasses import dataclass
-# from typing import Dict, Any  # Not used
 from control_agent.experiment_definitions.response_schema import CaseResponse
-from control_agent.experiment_definitions.response_schema import StepResponse
-from control_toolbox.tools.simulation import SimulationStepResponseProps, simulate_step_response
+from control_agent.experiment_definitions.response_schema import SpecificaitonTuningResponse
+from control_toolbox.tools.simulation import SimulationStepResponseProps
 from control_toolbox.tools.signals import StepProps, TimeRange
+from control_toolbox.tools.simulation import simulate_step_response
+from control_toolbox.tools.analysis import find_rise_time, find_overshoot
+from pathlib import Path
 from pydantic_evals.evaluators import (
     Evaluator,
     EvaluatorContext,
     EvaluationReason,
 )
-# from control_agent import FOPDT  # Not used
-# from logging import getLogger  # Not used
+from logging import getLogger
 import numpy as np
-from pathlib import Path
 
-from typing import List, Optional, Any
-# logger = getLogger(__name__)  # Not used
-
+logger = getLogger(__name__)
 
 @dataclass
-class StepResponseEvaluator(Evaluator[object, CaseResponse[StepResponse], object]):
-    """Evaluate system identification results against ground truth FOPDT parameters"""
-    rmse_tolerance: float = 0.1
-    gt_Kp: float = 1.0
-    gt_Ti: float = 2.0
-    gt_mode: bool = False
-    gt_output_interval: float = 0.1
-    gt_start_time: float = 0.0
-    gt_stop_time: float = 30.0
-    gt_start_value: float = 0.0
-    gt_final_value: float = 1.0
+class SpecificationTuningEvaluator(Evaluator[object, CaseResponse[SpecificaitonTuningResponse], object]):
+    """Evaluate specification tuning results against ground truth"""
+    tolerance: float = 0.10  # 10% tolerance
+    gt_rise_time: float = 2.0
+    gt_overshoot: float = 0.1 # percent
     
-    def evaluate(self, ctx: EvaluatorContext[object, CaseResponse[StepResponse], object]) -> EvaluationReason:
-        """Compare identified parameters with ground truth"""
-        # Extract nested output: AgentRunResult -> CaseResponse -> StepResponse
+    def evaluate(self, ctx: EvaluatorContext[object, SpecificaitonTuningResponse, object]) -> EvaluationReason:
+        """Compare specification tuning results with ground truth"""
+        # Calculate ground truth using the same library
         output = ctx.output
         if hasattr(output, 'output'):
             output = output.output
         if hasattr(output, 'output'):
             output = output.output
-        
-        # Now output should be StepResponse
-        # # Debug: Check what we actually have
-        # output_type = type(output).__name__
-        # has_outputs = hasattr(output, 'outputs')
-        # has_signals = hasattr(output, 'signals')
-        
-        # Find the "y" signal in the output
-        y = None
-        # Check both outputs and signals attributes
-        signals_list = []
-        if hasattr(output, 'outputs'):
-            signals_list = output.outputs or []
-        elif hasattr(output, 'signals'):
-            signals_list = output.signals or []
-        
-        for signal in signals_list:
-            if signal.name == "y":
-                y = np.array(signal.values)
-                break
-        
-        if y is None:
-            available_signals = [s.name for s in signals_list] if signals_list else []
-            # # Provide more detailed error message (debug code)
-            # debug_info = f"Type: {output_type}, has_outputs: {has_outputs}, has_signals: {has_signals}"
-            # if hasattr(output, 'outputs'):
-            #     debug_info += f", outputs length: {len(output.outputs)}"
-            # if hasattr(output, 'signals'):
-            #     debug_info += f", signals length: {len(output.signals)}"
+
+        if not isinstance(output, SpecificaitonTuningResponse):
             return EvaluationReason(
                 value=False,
-                reason=f"Output signal 'y' not found. Available signals: {available_signals}"
-                # reason=f"Output signal 'y' not found. Available signals: {available_signals}. Debug: {debug_info}"  # Debug version
+                reason=f"Output is not of type SpecificaitonTuningResponse. Got {type(output).__name__!r}."
             )
 
-        # simulate to get ground truth
-        gt_simulation_props = SimulationStepResponseProps(
-            start_time=self.gt_start_time,
-            stop_time=self.gt_stop_time,
-            output_interval=self.gt_output_interval,
+        Kp = output.controller_parameters.Kp
+        Ti = output.controller_parameters.Ti
+
+        simulation_props = SimulationStepResponseProps(
+            start_time=0.0,
+            stop_time=10.0,
+            output_interval=0.1,
             start_values={
-                "Kp": self.gt_Kp,
-                "Ti": self.gt_Ti,
-                "mode": self.gt_mode,
+                "Kp": Kp,
+                "Ti": Ti,
+                "mode": True,
             }
         )
-        gt_step_props = StepProps(
+        step_props = StepProps(
             signal_name="input",
-            time_range=TimeRange(start=self.gt_start_time, stop=self.gt_stop_time, sampling_time=self.gt_output_interval),
-            initial_value=self.gt_start_value,
-            final_value=self.gt_final_value
+            time_range=TimeRange(start=0.0, stop=10.0, sampling_time=0.1),
+            initial_value=0.0,
+            final_value=1.0
         )
 
-        # ground truth step response. Note: this is a DataModel object!
-        gt_step_response = simulate_step_response(
+        # Simulate step response with the controller parameters
+        step_response = simulate_step_response(
             fmu_path=Path("models/fmus/PI_FOPDT_2.fmu"),
-            sim_props=gt_simulation_props,
-            step_props=gt_step_props
+            sim_props=simulation_props,
+            step_props=step_props
         )
 
-        # Find the "y" signal in the ground truth response
-        gt_y = None
-        for signal in gt_step_response.signals:
-            if signal.name == "y":
-                gt_y = np.array(signal.values)
+        # Find rise time and overshoot from the simulated response
+        results_rise_time = find_rise_time(step_response)
+        results_overshoot = find_overshoot(step_response)
+
+        # Extract values for signal "y"
+        actual_rise_time = None
+        actual_overshoot = None
+        
+        for attribute in results_rise_time.attributes:
+            if attribute.signal_name == "y":
+                actual_rise_time = attribute.rise_time
                 break
         
-        if gt_y is None:
-            available_signals = [s.name for s in gt_step_response.signals]
+        for attribute in results_overshoot.attributes:
+            if attribute.signal_name == "y":
+                actual_overshoot = attribute.percent
+                break
+        
+        if actual_rise_time is None or actual_overshoot is None:
             return EvaluationReason(
                 value=False,
-                reason=f"Ground truth signal 'y' not found. Available signals: {available_signals}"
+                reason=f"Could not find rise time or overshoot for signal 'y' in the step response."
             )
 
-        # Ensure arrays have the same length for comparison
-        # min_len = min(len(y), len(gt_y))  # Not used, can check directly
+        # Check if the performance specifications are satisfied
+        rise_time_ok = actual_rise_time <= self.gt_rise_time
+        overshoot_ok = actual_overshoot <= self.gt_overshoot * 100.0
 
-        if len(y) == 0 or len(gt_y) == 0:
-            return EvaluationReason(
-                value=False,
-                reason=f"Cannot compare empty arrays. y length: {len(y)}, gt_y length: {len(gt_y)}"
-            )
-
-        if len(y) != len(gt_y):
-            return EvaluationReason(
-                value=False,
-                reason=f"y and gt_y have different lengths. y length: {len(y)}, gt_y length: {len(gt_y)}"
-            )
-      
-        # calculate RMSE
-        e = y - gt_y
-        y_rmse = np.sqrt(np.mean(e**2))
-
-        # Check if signals are within tolerance
-        if y_rmse <= self.rmse_tolerance:
+        if rise_time_ok and overshoot_ok:
             return EvaluationReason(
                 value=True,
-                reason=f"System response matches ground truth (RMSE={y_rmse:.3f})"
+                reason=f"Both rise time and overshoot meet the requirements: "
+                       f"rise time ≤ {self.gt_rise_time:.3f}s (actual: {actual_rise_time:.3f}s), "
+                       f"overshoot ≤ {self.gt_overshoot*100:.1f}% (actual: {actual_overshoot:.1f}%)"
             )
         else:
             return EvaluationReason(
                 value=False,
-                reason=f"System response does not match ground truth (RMSE={y_rmse:.3f})"
+                reason=f"Failed specification: "
+                       f"rise time ≤ {self.gt_rise_time:.3f}s (actual: {actual_rise_time:.3f}s), "
+                       f"overshoot ≤ {self.gt_overshoot*100:.1f}% (actual: {actual_overshoot:.1f}%)"
             )
