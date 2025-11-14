@@ -1,12 +1,13 @@
-from control_agent.agent.common import *
-from control_agent.agent.ctx import *
-from control_agent.agent.guardrails import apply_guardrails, SimulationGuardrails
+from control_agent.agent.core.types import *
+from control_agent.agent.context.models import *
+from control_agent.agent.validation.guardrails import apply_guardrails, SimulationGuardrails
+from control_agent.agent.utils.docstrings import make_docstring
 logger = getLogger(__name__)
 
 console = Console()
 
 from typing import Literal
-from control_agent.experiment_definitions.response_schema import StepResponse, Signal
+from control_agent.evals.schemas.responses import StepResponse, Signal
 def control_help(ctx: RunContext[StateDeps[SimContext]], topic:Literal["fopdt_pi_description", "keywords", "lambda_tuning", "zn_pid_tuning", "seaborg"]) -> str:
     """
     Provides detailed documentation on control tuning methods.
@@ -86,32 +87,70 @@ def get_step_response_data(ctx: RunContext[StateDeps[SimContext]]) -> StepRespon
     Extract the latest simulation data as StepResponse format.
     Use this tool to get the simulation results in the format required for the output.
     Returns timestamps, inputs, and outputs signals from the most recent simulation.
+    
+    IMPORTANT: This tool MUST be called after simulate_step_response to get the actual simulation data.
+    The returned StepResponse contains the full simulation results with all signals.
     """
     try:
         if len(ctx.deps.state.fmu.simulations) == 0:
-            return ToolExecutionError(message="No simulations have been run yet")
-        data = ctx.deps.state.fmu.simulations[-1].data
+            return ToolExecutionError(message="No simulations have been run yet. Call simulate_step_response first.")
+        
+        simulation = ctx.deps.state.fmu.simulations[-1]
+        data = simulation.data
         
         # Extract timestamps
         timestamps = data.timestamps if hasattr(data, 'timestamps') and data.timestamps else []
         
         # Extract signals - DataModel has 'signals' attribute
-        signals = data.signals if hasattr(data, 'signals') and data.signals else []
+        signals = []
+        if hasattr(data, 'signals'):
+            signals = data.signals if data.signals else []
+        elif hasattr(data, 'get_signals'):
+            # Try alternative method if available
+            signals = data.get_signals() if callable(data.get_signals) else []
+        
+        # Debug: Log what we found
+        if not signals:
+            available_attrs = [attr for attr in dir(data) if not attr.startswith('_')]
+            console.print(f"[DEBUG] No signals found. Available attributes: {available_attrs}")
+            console.print(f"[DEBUG] Data type: {type(data)}")
+            if hasattr(data, 'timestamps'):
+                console.print(f"[DEBUG] Timestamps length: {len(timestamps)}")
         
         # Separate inputs and outputs
         inputs = []
         outputs = []
         
         for signal in signals:
-            signal_obj = Signal(name=signal.name, values=signal.values if hasattr(signal, 'values') else [])
+            # Extract signal name and values
+            signal_name = signal.name if hasattr(signal, 'name') else str(signal)
+            signal_values = signal.values if hasattr(signal, 'values') and signal.values else []
+            
+            if not signal_values:
+                console.print(f"[WARNING] Signal '{signal_name}' has no values")
+                continue
+            
+            signal_obj = Signal(name=signal_name, values=signal_values)
+            
             # Typically 'u' or 'input' is input, 'y' or 'output' is output
-            if signal.name.lower() in ['u', 'input', 'control']:
+            signal_name_lower = signal_name.lower()
+            if signal_name_lower in ['u', 'input', 'control']:
                 inputs.append(signal_obj)
-            elif signal.name.lower() in ['y', 'output', 'plant']:
+            elif signal_name_lower in ['y', 'output', 'plant']:
                 outputs.append(signal_obj)
             else:
                 # Default to output if unclear
                 outputs.append(signal_obj)
+        
+        # Validate we have data
+        if not timestamps:
+            return ToolExecutionError(message="Simulation data has no timestamps. The simulation may have failed.")
+        
+        if not outputs and not inputs:
+            return ToolExecutionError(
+                message=f"Simulation data has no signals. Found {len(signals)} signals in data. "
+                f"Available data attributes: {[attr for attr in dir(data) if not attr.startswith('_')]}"
+            )
         
         return StepResponse(
             timestamps=timestamps,
@@ -119,8 +158,11 @@ def get_step_response_data(ctx: RunContext[StateDeps[SimContext]]) -> StepRespon
             outputs=outputs
         )
     except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
         console.print(f"Error extracting step response data: {e}")
-        return ToolExecutionError(message=str(e))
+        console.print(f"Traceback: {error_details}")
+        return ToolExecutionError(message=f"Failed to extract step response data: {str(e)}")
 
 def get_fmu_names(ctx: RunContext[StateDeps[SimContext]]) -> List[str]:
     """

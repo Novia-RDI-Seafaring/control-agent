@@ -1,6 +1,6 @@
 import pytest
-from control_agent.experiment_definitions.response_schema import *
-from control_agent.agent.agent import create_agent
+from control_agent.evals.schemas.responses import *
+from control_agent.agent.core.agent import create_agent
 
 
 @pytest.fixture

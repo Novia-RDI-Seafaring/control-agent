@@ -1,7 +1,7 @@
 import typer
-from control_agent.fopdt_sys import FOPDT
-from control_agent import ZieglerNicholsMethod
-from control_agent.lam import LambdaTuningMethod
+from control_agent.domain.models import FOPDT
+from control_agent.domain.tuning.ziegler_nichols import ZieglerNicholsMethod
+from control_agent.domain.tuning.lambda_tuning import LambdaTuningMethod
 
 app = typer.Typer()
 
@@ -55,3 +55,4 @@ def main(
 
 if __name__ == "__main__":
     app()
+

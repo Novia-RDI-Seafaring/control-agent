@@ -1,6 +1,6 @@
-from control_agent.agent.common import *
-from control_agent.agent.model import get_default_model
-from control_agent.prompts import SYS_PROMPT as SYSTEM_PROMPT
+from control_agent.agent.core.types import *
+from control_agent.agent.core.model import get_default_model
+from control_agent.prompts.system import SYS_PROMPT as SYSTEM_PROMPT
 
 def create_agent(
     model: Model | KnownModelName | str = get_default_model(),

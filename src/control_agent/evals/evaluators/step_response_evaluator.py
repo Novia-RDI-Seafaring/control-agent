@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 # from typing import Dict, Any  # Not used
-from control_agent.experiment_definitions.response_schema import CaseResponse
-from control_agent.experiment_definitions.response_schema import StepResponse
+from control_agent.evals.schemas.responses import CaseResponse, StepResponse
 from control_toolbox.tools.simulation import SimulationStepResponseProps, simulate_step_response
 from control_toolbox.tools.signals import StepProps, TimeRange
 from pydantic_evals.evaluators import (
@@ -55,6 +54,10 @@ class StepResponseEvaluator(Evaluator[object, CaseResponse[StepResponse], object
         elif hasattr(output, 'signals'):
             signals_list = output.signals or []
         
+        # Also check if output itself is a list of signals (for debugging)
+        if not signals_list and isinstance(output, list):
+            signals_list = output
+        
         for signal in signals_list:
             if signal.name == "y":
                 y = np.array(signal.values)
@@ -62,16 +65,21 @@ class StepResponseEvaluator(Evaluator[object, CaseResponse[StepResponse], object
         
         if y is None:
             available_signals = [s.name for s in signals_list] if signals_list else []
-            # # Provide more detailed error message (debug code)
-            # debug_info = f"Type: {output_type}, has_outputs: {has_outputs}, has_signals: {has_signals}"
-            # if hasattr(output, 'outputs'):
-            #     debug_info += f", outputs length: {len(output.outputs)}"
-            # if hasattr(output, 'signals'):
-            #     debug_info += f", signals length: {len(output.signals)}"
+            # Provide more detailed error message for debugging
+            output_type = type(output).__name__
+            has_outputs = hasattr(output, 'outputs')
+            has_signals = hasattr(output, 'signals')
+            debug_info = f"Type: {output_type}, has_outputs: {has_outputs}, has_signals: {has_signals}"
+            if hasattr(output, 'outputs'):
+                debug_info += f", outputs length: {len(output.outputs) if output.outputs else 0}"
+            if hasattr(output, 'signals'):
+                debug_info += f", signals length: {len(output.signals) if output.signals else 0}"
+            if hasattr(output, 'timestamps'):
+                debug_info += f", timestamps length: {len(output.timestamps) if output.timestamps else 0}"
+            
             return EvaluationReason(
                 value=False,
-                reason=f"Output signal 'y' not found. Available signals: {available_signals}"
-                # reason=f"Output signal 'y' not found. Available signals: {available_signals}. Debug: {debug_info}"  # Debug version
+                reason=f"Output signal 'y' not found. Available signals: {available_signals}. Debug: {debug_info}"
             )
 
         # simulate to get ground truth
@@ -114,19 +122,31 @@ class StepResponseEvaluator(Evaluator[object, CaseResponse[StepResponse], object
             )
 
         # Ensure arrays have the same length for comparison
-        # min_len = min(len(y), len(gt_y))  # Not used, can check directly
-
         if len(y) == 0 or len(gt_y) == 0:
             return EvaluationReason(
                 value=False,
                 reason=f"Cannot compare empty arrays. y length: {len(y)}, gt_y length: {len(gt_y)}"
             )
 
+        # Handle length mismatch by interpolating to the shorter length
+        # This allows comparison even if the agent uses different sampling or FMU
         if len(y) != len(gt_y):
-            return EvaluationReason(
-                value=False,
-                reason=f"y and gt_y have different lengths. y length: {len(y)}, gt_y length: {len(gt_y)}"
-            )
+            # If lengths are very different, interpolate the longer array to match the shorter
+            if len(y) > len(gt_y):
+                # Interpolate y to match gt_y length
+                y_indices = np.linspace(0, len(y) - 1, len(gt_y))
+                y = np.interp(y_indices, np.arange(len(y)), y)
+            elif len(gt_y) > len(y):
+                # Interpolate gt_y to match y length
+                gt_y_indices = np.linspace(0, len(gt_y) - 1, len(y))
+                gt_y = np.interp(gt_y_indices, np.arange(len(gt_y)), gt_y)
+            
+            # After interpolation, they should be the same length
+            if len(y) != len(gt_y):
+                return EvaluationReason(
+                    value=False,
+                    reason=f"Failed to align arrays after interpolation. y length: {len(y)}, gt_y length: {len(gt_y)}"
+                )
       
         # calculate RMSE
         e = y - gt_y

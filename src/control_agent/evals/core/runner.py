@@ -1,5 +1,5 @@
 from __future__ import annotations
-from control_agent.agent.common import *
+from control_agent.agent.core.types import *
 import os
 from typing import Any, Optional, Type, Callable, Coroutine
 from pathlib import Path
@@ -15,15 +15,15 @@ logfire.instrument_pydantic_ai()
 #logfire.instrument_openai()
 
 
-from control_agent.agent.agent import OutputDataT, create_agent
-from control_agent.agent.tools_ctx import get_tools as get_tools_ctx
-from control_agent.agent.tools import get_tools
-from control_agent.agent.model import get_default_model
-from control_agent.evals.report import save_report
+from control_agent.agent.core.agent import OutputDataT, create_agent
+from control_agent.agent.tools.context import get_tools as get_tools_ctx
+from control_agent.agent.tools.base import get_tools
+from control_agent.agent.core.model import get_default_model
+from control_agent.evals.core.report import save_report
 from control_agent.evals.export_results import export_results_to_csv
 from control_agent.evals.experiments import datasets # type: ignore
-from control_agent.evals.planning import plan_experiment, plan_all_experiments, ExperimentPlan
-from control_agent.evals.plan_executor import get_plan_executor_runner, execute_plan, PlanExecutionResult
+from control_agent.evals.core.planning import plan_experiment, plan_all_experiments, ExperimentPlan
+from control_agent.evals.core.executor import get_plan_executor_runner, execute_plan, PlanExecutionResult
 from control_toolbox.config import set_fmu_dir
 from pydantic_ai.ag_ui import StateDeps
 from typer import Typer
@@ -59,7 +59,7 @@ def get_normal_agent_runner(output_model: Type[OutputDataT]) -> Callable[[str], 
     return runner # type: ignore
 
 
-from control_agent.agent.tools_ctx import DepsType, SimContext
+from control_agent.agent.tools.context import DepsType, SimContext
 def get_agent_runner(output_model: Type[OutputDataT], results_keeper: Dict[str, AgentRunResult[OutputDataT]], ctx_keeper: Dict[str, SimContext]) -> Callable[[str], Coroutine[Any, Any, AgentRunResult[OutputDataT]]]:
     console = Console()
     from pydantic import BaseModel
@@ -239,7 +239,7 @@ def run_experiment(name: str, ctx_tools: bool = False, save: bool = False, use_p
                 for case in report.cases:
                     if case.name in results_keeper:
                         result = results_keeper[case.name]
-                        from control_agent.evals.plan_executor import extract_executed_tools, verify_plan_execution
+                        from control_agent.evals.core.executor import extract_executed_tools, verify_plan_execution
                         executed_tools = extract_executed_tools(result)
                         verification = verify_plan_execution(plan, executed_tools)
                         console.print(f"\n[cyan]Plan Execution Verification:[/cyan]")

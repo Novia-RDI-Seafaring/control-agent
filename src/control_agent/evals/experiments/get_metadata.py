@@ -1,5 +1,5 @@
 from control_agent.evals.common import * # type: ignore
-from control_agent.experiment_definitions.response_schema import GetMetadataResponse, CaseResponse
+from control_agent.evals.schemas.responses import GetMetadataResponse, CaseResponse
 from control_agent.evals.evaluators.required_tool_use_evaluator import RequiredToolUseEvaluator, ToolUseSpec
 
 OutputDataT = CaseResponse[GetMetadataResponse]

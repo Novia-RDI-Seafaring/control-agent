@@ -1,5 +1,5 @@
-from control_agent.agent.common import *
-from control_agent.agent.ctx import SimContext, FmuContext, StateDeps
+from control_agent.agent.core.types import *
+from control_agent.agent.context.models import SimContext, FmuContext, StateDeps
 
 from pydantic_ai.tools import ToolDefinition
 from typing import Callable, Any
@@ -113,53 +113,3 @@ def make_docstring(
     docstring_tool.meta = meta
     return compose(docstring_tool, style=DocstringStyle.GOOGLE)
 
-
-if __name__ == "__main__":
-    from control_agent.agent.common import *
-    from control_agent.agent.agent import create_agent
-
-    def some_tool(bar: int=42, baz: Optional[str]= None) -> int:
-        """
-        This is a test tool.
-        
-        Purpouse:
-            To test the tool preparation function.
-
-        Important:
-            This tool is important. 
-
-        Args:
-            bar: the meaning of life
-            baz: what comes after..
-
-        Returns:
-            int: The sum of the two arguments
-
-
-        Purpouse:
-            To test the tool preparation function.
-
-        Important:
-            This tool is important.        
-        
-        """
-        return bar + len(baz)
-
-    def my_custom_tool(ctx: StateDeps[SimContext], bar: int, baz: str) -> bool:
-        """
-        Params:
-            ctx: the context
-        """
-        return some_tool(bar, baz) == 42
-    
-    docstring = make_docstring(some_tool, my_custom_tool)
-    print("--------------------------------")
-    print(docstring)
-
-    print("--------------------------------")
-    print(some_tool.__doc__)
-
-    print(my_custom_tool.__annotations__)
-
-    t = Tool(my_custom_tool, name="my_custom_tool", description=make_docstring(some_tool, my_custom_tool))
-    print(t.description)

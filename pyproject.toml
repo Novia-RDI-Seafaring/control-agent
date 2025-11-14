@@ -28,8 +28,8 @@ dependencies = [
 ]
 
 [project.scripts]
-ecc26 = "control_agent.cli:app"
-eval = "control_agent.evals.run:app"
+ecc26 = "control_agent.cli.main:app"
+eval = "control_agent.evals.core.runner:app"
 
 [build-system]
 requires = ["setuptools>=61.0"]

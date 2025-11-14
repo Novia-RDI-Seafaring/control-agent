@@ -5,9 +5,9 @@ import json
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from pydantic_evals.reporting import EvaluationReport, ReportCase
-from control_agent.agent.common import AgentRunResult, ToolCallPart
-from control_agent.agent.model import get_default_model
-from control_agent.experiment_definitions.response_schema import CaseResponse
+from control_agent.agent.core.types import AgentRunResult, ToolCallPart
+from control_agent.agent.core.model import get_default_model
+from control_agent.evals.schemas.responses import CaseResponse
 import os
 
 

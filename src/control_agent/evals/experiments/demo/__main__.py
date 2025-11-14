@@ -1,6 +1,6 @@
 from control_agent.evals.experiments.demo.dataset import dataset
 from control_agent.evals.experiments.demo.agent import agent
-from control_agent.evals.report import render_report
+from control_agent.evals.core.report import render_report
 
 from control_agent.evals.experiments.demo.agent import answer_question
 

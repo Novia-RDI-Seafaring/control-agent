@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import List, Any, Dict, Optional, Callable
 
-from control_agent.experiment_definitions.response_schema import (
+from control_agent.evals.schemas.responses import (
     get_json_schema,
     ListModelNamesResponse,
     ListIOPResponse,
@@ -13,7 +13,7 @@ from control_agent.experiment_definitions.response_schema import (
     ZNResponse,
     TuningOvershootResponse
 )
-from control_agent.experiment_definitions.response_schema import SystemParameters
+from control_agent.evals.schemas.responses import SystemParameters
 
 class ToolUse(BaseModel):
     name: str

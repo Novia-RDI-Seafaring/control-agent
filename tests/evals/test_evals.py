@@ -1,4 +1,4 @@
-from control_agent.experiment_definitions.definitions import experiment_definitions, ExperimentDefinitions
+from control_agent.evals.schemas.definitions import experiment_definitions, ExperimentDefinitions
 import pytest
 
 

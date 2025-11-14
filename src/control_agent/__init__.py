@@ -1,10 +1,17 @@
 """MCP FMI ECC26 package for control system analysis."""
 
-from .zn import ZieglerNicholsMethod, FOPDT, UltimatePoint, ControllerPI
+from control_agent.domain import (
+    ZieglerNicholsMethod,
+    FOPDT,
+    UltimatePoint,
+    ControllerPI,
+    LambdaTuningMethod,
+)
 
 __all__ = [
     "ZieglerNicholsMethod",
-    "FOPDT", 
+    "FOPDT",
     "UltimatePoint",
-    "ControllerPI"
+    "ControllerPI",
+    "LambdaTuningMethod",
 ]

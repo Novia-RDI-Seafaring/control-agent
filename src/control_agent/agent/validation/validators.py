@@ -9,7 +9,7 @@ from typing import Any
 import os
 
 from pydantic import ValidationError, model_validator
-from control_agent.agent.common import (
+from control_agent.agent.core.types import (
     SimulationStepResponseProps,
     StepProps,
     IdentificationProps,

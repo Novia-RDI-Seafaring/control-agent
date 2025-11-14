@@ -1,4 +1,4 @@
-from control_agent.agent.common import *
+from control_agent.agent.core.types import *
 
 DepsType = StateDeps['FmuContext']
 
@@ -83,3 +83,4 @@ class SimContext(BaseModel):
     
 class ToolExecutionError(BaseModel):
     message: str
+

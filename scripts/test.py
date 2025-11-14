@@ -3,8 +3,8 @@ from pathlib import Path
 import asyncio
 import os
 from dotenv import load_dotenv
-from control_agent.agent.agent import create_agent
-from control_agent.experiment_definitions.definitions import experiment_definitions
+from control_agent.agent.core.agent import create_agent
+from control_agent.evals.schemas.definitions import experiment_definitions
 # import logfire
 
 from rich.console import Console

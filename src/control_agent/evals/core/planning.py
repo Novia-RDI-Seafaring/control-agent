@@ -10,12 +10,12 @@ from __future__ import annotations
 from typing import List, Dict, Any, Optional, Type
 from pydantic import BaseModel, Field
 from dataclasses import dataclass, field
-from control_agent.agent.common import *
-from control_agent.agent.model import get_default_model
-from control_agent.agent.agent import create_agent
+from control_agent.agent.core.types import *
+from control_agent.agent.core.model import get_default_model
+from control_agent.agent.core.agent import create_agent
 from control_agent.evals.experiments import datasets
 from control_agent.evals.evaluators.required_tool_use_evaluator import RequiredToolUseEvaluator, ToolUseSpec
-from control_agent.agent.tools_ctx import SimContext, get_tools as get_tools_ctx
+from control_agent.agent.tools.context import SimContext, get_tools as get_tools_ctx
 from pathlib import Path
 
 

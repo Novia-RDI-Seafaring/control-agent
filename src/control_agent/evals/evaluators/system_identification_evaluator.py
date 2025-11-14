@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from typing import Dict, Any
-from control_agent.experiment_definitions.response_schema import CaseResponse
-from control_agent.experiment_definitions.response_schema import SystemIdentificationResponse, SystemParameters
+from control_agent.evals.schemas.responses import CaseResponse, SystemIdentificationResponse, SystemParameters
 from pydantic_evals.evaluators import (
     Evaluator,
     EvaluatorContext,

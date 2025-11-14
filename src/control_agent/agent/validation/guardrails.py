@@ -8,14 +8,14 @@ from pydantic import BaseModel
 
 from pathlib import Path
 
-from control_agent.agent.ctx import ToolExecutionError, SimContext
-from control_agent.agent.model_validators import (
+from control_agent.agent.context.models import ToolExecutionError, SimContext
+from control_agent.agent.validation.validators import (
     validate_simulation_step_response_props,
     validate_step_props,
     validate_identification_props,
     validate_lambda_tuning_props,
 )
-from control_agent.agent.common import (
+from control_agent.agent.core.types import (
     SimulationStepResponseProps,
     StepProps,
     IdentificationProps,
@@ -56,7 +56,7 @@ class SimulationGuardrails(GuardrailValidator):
     """Guardrails for simulation tools - dynamic/runtime checks only.
     
     Note: Deterministic invariants (ranges, cross-field rules) are handled
-    by Pydantic model validators in model_validators.py.
+    by Pydantic model validators in validators.py.
     """
     
     def validate_input(self, tool_name: str, **kwargs) -> list[GuardrailViolation]:
@@ -364,3 +364,4 @@ def apply_guardrails(
             return ToolExecutionError(message=str(e))
     
     return guarded_tool
+

@@ -9,11 +9,11 @@ The executor:
 from __future__ import annotations
 from typing import Dict, Any, Optional, Type, Callable, Coroutine, List
 from pydantic import BaseModel, Field
-from control_agent.agent.common import *
-from control_agent.agent.agent import create_agent, OutputDataT
-from control_agent.agent.tools_ctx import get_tools as get_tools_ctx, DepsType, SimContext
-from control_agent.agent.model import get_default_model
-from control_agent.evals.planning import ExperimentPlan, ToolCallPlan
+from control_agent.agent.core.types import *
+from control_agent.agent.core.agent import create_agent, OutputDataT
+from control_agent.agent.tools.context import get_tools as get_tools_ctx, DepsType, SimContext
+from control_agent.agent.core.model import get_default_model
+from control_agent.evals.core.planning import ExperimentPlan, ToolCallPlan
 from pydantic_ai.ag_ui import StateDeps as PydanticStateDeps
 from pathlib import Path
 from rich.console import Console

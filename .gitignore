@@ -52,6 +52,7 @@ coverage.xml
 cover/
 *copy.py
 data/
+docs/mine
 
 # Translations
 *.mo

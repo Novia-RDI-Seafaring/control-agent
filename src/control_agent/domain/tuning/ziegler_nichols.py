@@ -1,8 +1,7 @@
-from ftplib import parse229
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 import numpy as np
 from scipy.optimize import root_scalar
-from control_agent.fopdt_sys import FOPDT, ControllerPI
+from control_agent.domain.models import FOPDT, ControllerPI
 
 ZN_PROCEDURE = """
 ## Ziegler-Nichols Closed-Loop (Ultimate Gain) Method
@@ -119,6 +118,3 @@ class ZieglerNicholsMethod:
 
 zn = ZieglerNicholsMethod(sys_pars=FOPDT(K=2.0, T=1.0, L=0.5))
 
-
-
-        

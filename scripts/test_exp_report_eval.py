@@ -2,9 +2,9 @@
 from pathlib import Path
 import asyncio
 from dotenv import load_dotenv
-from control_agent.agent.agent import create_agent
-from control_agent.experiment_definitions.definitions import experiment_definitions
-from control_agent.evals.report import save_report
+from control_agent.agent.core.agent import create_agent
+from control_agent.evals.schemas.definitions import experiment_definitions
+from control_agent.evals.core.report import save_report
 from pydantic_evals import Case, Dataset
 from typing import Any
 from rich.console import Console

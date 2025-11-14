@@ -1,4 +1,4 @@
-from control_agent.agent.common import *
+from control_agent.agent.core.types import *
 
 logger = getLogger(__name__)
 # Load environment variables
@@ -45,3 +45,4 @@ def get_default_model(model_name: str = default_model, provider: Provider[AsyncO
         model_name=model_name.split(':')[1] if ':' in model_name else model_name,
         provider=provider
     )
+

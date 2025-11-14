@@ -1,18 +1,16 @@
+"""Shared types and imports for agent framework."""
 from __future__ import annotations
 import os
 import uuid
 import base64
-from typing import List, Optional, Dict, Literal, Any, Type, TypeVar, Union, Any, Callable, Generic, Dict, Optional, Tuple, Type, TypeVar, Union, get_type_hints, get_origin, get_args, Optional, Union, TypeVar, Type, Literal, Dict, Any, List, get_origin, get_args, get_type_hints
+from typing import List, Optional, Dict, Literal, Any, Type, TypeVar, Union, Callable, Generic, Tuple, get_type_hints, get_origin, get_args
 from functools import wraps
 from inspect import signature, Parameter, Signature
 from pydantic import BaseModel, Field
-
 from dotenv import load_dotenv
 from logging import getLogger
 from pathlib import Path
 from rich.console import Console
-
-from pydantic import BaseModel, Field
 from matplotlib.figure import Figure
 from ag_ui.core import EventType, StateSnapshotEvent # type: ignore
 from pydantic_ai import Agent, BinaryContent, AgentRunResult, UserPromptPart, ModelRequest, ModelResponse, TextPart, ToolCallPart, ToolReturnPart
@@ -23,14 +21,12 @@ from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.output import OutputDataT
 from pydantic_ai.models import Model, KnownModelName
 from pydantic_ai.providers import Provider
-
 from control_toolbox.core import DataModel, AttributesGroup
 from control_toolbox.tools.identification import IdentificationProps, FOPDTModel
 from control_toolbox.tools.information import ModelDescription
 from control_toolbox.tools.pid_tuning import UltimateTuningProps, PIDParameters, LambdaTuningProps
 from control_toolbox.tools.analysis import SettlingTimeProps, InflectionPointProps, FindPeaksProps
 from control_toolbox.tools.simulation import SimulationStepResponseProps, StepProps
-
 from control_toolbox.tools.information import get_fmu_names as _get_fmu_names
 from control_toolbox.tools.information import get_model_description as _get_model_description
 from control_toolbox.tools.identification import identify_fopdt_from_step as _identify_fopdt_from_step
@@ -46,22 +42,17 @@ from control_toolbox.tools.analysis import find_overshoot as _find_overshoot
 from control_toolbox.tools.pid_tuning import lambda_tuning as _lambda_tuning
 from control_toolbox.tools.pid_tuning import zn_pid_tuning as _zn_pid_tuning
 from control_toolbox.tools.plotting import plot_data
-
 from devtools import debug
-
 from openai import AsyncOpenAI
-
 from control_toolbox.storage import InMemoryDataStorage, StoredRepresentation, ReprStore
-from control_toolbox.core import DataModel, DataModelTeaser
-from typing import Optional
-import uuid
+from control_toolbox.core import DataModelTeaser
 
-# System prompt with tuning method docume
 __all__ = [
     # modules and global variables
     'os', 'uuid', 'base64',
     # typing
-    'List', 'Optional', 'Dict', 'Literal', 'Any', 'Type', 'TypeVar', 'Union', 'Callable', 'Generic', 'Dict', 'Optional', 'Tuple', 'Type', 'TypeVar', 'Union', 'get_type_hints', 'get_origin', 'get_args', 'Optional', 'Union', 'TypeVar', 'Type', 'Literal', 'Dict', 'Any', 'List', 'get_origin', 'get_args', 'get_type_hints',
+    'List', 'Optional', 'Dict', 'Literal', 'Any', 'Type', 'TypeVar', 'Union', 'Callable', 'Generic', 'Tuple', 
+    'get_type_hints', 'get_origin', 'get_args',
     'wraps', 'signature', 'Parameter', 'Signature',
     # dotenv/logging/pathlib
     'load_dotenv', 'getLogger', 'Path',
@@ -72,15 +63,18 @@ __all__ = [
     # ag_ui
     'EventType', 'StateSnapshotEvent', 'StateDeps',
     # AI agent infrastructure
-    'Agent', 'Tool', 'AgentRunResult', 'StateDeps', 'RunContext', 'OpenAIChatModel', 'AgentDepsT', 'OutputDataT', 'Model', 'KnownModelName', 'Provider', 'BinaryContent',
+    'Agent', 'Tool', 'AgentRunResult', 'StateDeps', 'RunContext', 'OpenAIChatModel', 'AgentDepsT', 'OutputDataT', 
+    'Model', 'KnownModelName', 'Provider', 'BinaryContent',
     'UserPromptPart', 'ModelRequest', 'ModelResponse', 'TextPart', 'ToolCallPart', 'ToolReturnPart',
     # control_toolbox core and tunings
     'DataModel', 'AttributesGroup',
-    'InflectionPointProps', 'IdentificationProps', 'FOPDTModel', 'ModelDescription', 'UltimateTuningProps', 'PIDParameters', 'LambdaTuningProps',
+    'InflectionPointProps', 'IdentificationProps', 'FOPDTModel', 'ModelDescription', 'UltimateTuningProps', 
+    'PIDParameters', 'LambdaTuningProps',
     'SettlingTimeProps', 'SimulationStepResponseProps', 'StepProps', 'FindPeaksProps',
     # control_toolbox functions/tools (internal names)
     '_get_fmu_names', '_get_model_description', '_identify_fopdt_from_step', '_simulate_step_response', '_simulate',
-    '_find_inflection_point', '_find_characteristic_points', '_find_peaks', '_find_settling_time', '_find_rise_time', '_find_overshoot', '_oscillation_analysis',
+    '_find_inflection_point', '_find_characteristic_points', '_find_peaks', '_find_settling_time', '_find_rise_time', 
+    '_find_overshoot', '_oscillation_analysis',
     '_lambda_tuning', '_zn_pid_tuning',
     'plot_data',
     # openai
@@ -89,3 +83,4 @@ __all__ = [
     'InMemoryDataStorage', 'StoredRepresentation', 'ReprStore', 'DataModelTeaser',
     'debug',
 ]
+

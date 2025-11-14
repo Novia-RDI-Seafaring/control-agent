@@ -56,7 +56,7 @@ print(f"PI Controller: {zn_method.pi_controller}")
 #### Lambda-Tuning Method
 ```python
 from control_agent import FOPDT
-from control_agent.lam import LambdaTuningMethod
+from control_agent import LambdaTuningMethod
 
 # Create FOPDT system
 system = FOPDT(K=2.0, T=1.0, L=0.5)

@@ -5,14 +5,14 @@ import pytest
 from unittest.mock import Mock, MagicMock
 from pydantic import BaseModel
 
-from control_agent.agent.guardrails import (
+from control_agent.agent.validation.guardrails import (
     GuardrailViolation,
     GuardrailValidator,
     SimulationGuardrails,
     apply_guardrails
 )
-from control_agent.agent.ctx import ToolExecutionError
-from control_agent.agent.common import (
+from control_agent.agent.context.models import ToolExecutionError
+from control_agent.agent.core.types import (
     SimulationStepResponseProps,
     StepProps,
     IdentificationProps,
