@@ -1,11 +1,13 @@
 """Export evaluation results to CSV and pickle for analysis"""
 import pandas as pd
 import pickle
+import json
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from pydantic_evals.reporting import EvaluationReport, ReportCase
 from control_agent.agent.common import AgentRunResult, ToolCallPart
 from control_agent.agent.model import get_default_model
+from control_agent.experiment_definitions.response_schema import CaseResponse
 import os
 
 
@@ -33,29 +35,76 @@ def extract_tool_calls(result: Optional[AgentRunResult[Any]]) -> List[str]:
     return tool_calls
 
 
-def extract_agent_response(result: Optional[AgentRunResult[Any]]) -> str:
-    """Extract the agent's final response message"""
-    if result is None:
-        return ""
+def extract_agent_response(result: Optional[AgentRunResult[Any]]) -> tuple[str, Optional[Any], Optional[str]]:
+    """
+    Extract the agent's final response message and structured output.
     
-    # Try to get the output message if it's a CaseResponse
+    Returns:
+        tuple: (message: str, structured_output: Any, structured_output_json: str)
+    """
+    if result is None:
+        return "", None, None
+    
     try:
         if hasattr(result, 'output'):
             output = result.output
+            
+            # Check if it's a CaseResponse
+            if isinstance(output, CaseResponse):
+                message = output.message
+                structured_output = output.output
+                # Serialize structured output to JSON for CSV
+                try:
+                    if hasattr(structured_output, 'model_dump_json'):
+                        # Pydantic v2 - use model_dump_json for direct JSON serialization
+                        structured_output_json = structured_output.model_dump_json(indent=2)
+                    elif hasattr(structured_output, 'model_dump'):
+                        # Pydantic v2 fallback
+                        structured_output_json = json.dumps(structured_output.model_dump(), indent=2)
+                    elif hasattr(structured_output, 'dict'):
+                        # Pydantic v1
+                        structured_output_json = json.dumps(structured_output.dict(), indent=2)
+                    else:
+                        # Fallback: try to convert to dict
+                        structured_output_json = json.dumps(structured_output, indent=2, default=str)
+                except Exception as e:
+                    structured_output_json = json.dumps({"error": f"Failed to serialize: {str(e)}"}, indent=2)
+                
+                return message, structured_output, structured_output_json
+            
+            # Check nested CaseResponse
+            if hasattr(output, 'output') and isinstance(output.output, CaseResponse):
+                case_response = output.output
+                message = case_response.message
+                structured_output = case_response.output
+                try:
+                    if hasattr(structured_output, 'model_dump_json'):
+                        # Pydantic v2 - use model_dump_json for direct JSON serialization
+                        structured_output_json = structured_output.model_dump_json(indent=2)
+                    elif hasattr(structured_output, 'model_dump'):
+                        structured_output_json = json.dumps(structured_output.model_dump(), indent=2)
+                    elif hasattr(structured_output, 'dict'):
+                        structured_output_json = json.dumps(structured_output.dict(), indent=2)
+                    else:
+                        structured_output_json = json.dumps(structured_output, indent=2, default=str)
+                except Exception as e:
+                    structured_output_json = json.dumps({"error": f"Failed to serialize: {str(e)}"}, indent=2)
+                
+                return message, structured_output, structured_output_json
+            
+            # Fallback: try to get message
             if hasattr(output, 'message'):
-                return str(output.message)
-            if hasattr(output, 'output') and hasattr(output.output, 'message'):
-                return str(output.output.message)
+                return str(output.message), None, None
         
         # Fallback: get the last text part
         for message in reversed(list(result.all_messages())):
             for part in reversed(message.parts):
                 if hasattr(part, 'content') and part.content:
-                    return str(part.content)
+                    return str(part.content), None, None
         
-        return str(result.output) if hasattr(result, 'output') else ""
-    except Exception:
-        return str(result.output) if hasattr(result, 'output') else ""
+        return str(result.output) if hasattr(result, 'output') else "", None, None
+    except Exception as e:
+        return str(result.output) if hasattr(result, 'output') else "", None, None
 
 
 def export_results_to_csv(
@@ -87,8 +136,11 @@ def export_results_to_csv(
         executed_tools = extract_tool_calls(result) if result else []
         tools_str = ", ".join(executed_tools) if executed_tools else ""
         
-        # Extract agent response
-        agent_response = extract_agent_response(result) if result else ""
+        # Extract agent response (only the message, not the structured output)
+        if result:
+            agent_response, _, _ = extract_agent_response(result)
+        else:
+            agent_response = ""
         
         # Extract metrics
         input_tokens = case.metrics.get("input_tokens", 0)
@@ -117,7 +169,7 @@ def export_results_to_csv(
             "query": query,
             "executed_tools": tools_str,
             "tool_count": len(executed_tools),
-            "agent_response": agent_response,
+            "agent_response": agent_response,  # Only the message text, not the structured schema
             "input_tokens": input_tokens,
             "output_tokens": output_tokens,
             "reasoning_tokens": reasoning_tokens,
