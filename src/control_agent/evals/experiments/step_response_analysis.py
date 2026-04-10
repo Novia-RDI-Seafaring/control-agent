@@ -1,5 +1,5 @@
 from control_agent.evals.common import * # type: ignore
-from control_agent.experiment_definitions.response_schema import StepResponseAnalysisResponse, CaseResponse
+from control_agent.evals.response_schema import StepResponseAnalysisResponse, CaseResponse
 from control_agent.evals.evaluators.required_tool_use_evaluator import RequiredToolUseEvaluator, ToolUseSpec
 from control_agent.evals.evaluators.step_response_analysis_evaluator import StepResponseAnalysisEvaluator
 

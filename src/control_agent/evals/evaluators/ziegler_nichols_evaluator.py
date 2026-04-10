@@ -10,7 +10,7 @@ from control_agent import FOPDT
 from logging import getLogger
 from control_toolbox.tools.pid_tuning import zn_pid_tuning as _zn_pid_tuning
 from control_toolbox.tools.pid_tuning import UltimateTuningProps
-from control_agent.experiment_definitions.response_schema import ZNResponse
+from control_agent.evals.response_schema import ZNResponse
 from control_toolbox.tools.pid_tuning import UltimateTuningProps, UltimateGainParameters
 from control_toolbox.tools.simulation import SimulationStepResponseProps, simulate_step_response
 from control_toolbox.tools.simulation import StepProps 

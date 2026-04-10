@@ -1,6 +1,6 @@
 from dataclasses import dataclass
-from control_agent.experiment_definitions.response_schema import CaseResponse
-from control_agent.experiment_definitions.response_schema import LambdaTuningResponse
+from control_agent.evals.response_schema import CaseResponse
+from control_agent.evals.response_schema import LambdaTuningResponse
 from pydantic_evals.evaluators import (
     Evaluator,
     EvaluatorContext,

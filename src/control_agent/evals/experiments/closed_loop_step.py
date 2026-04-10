@@ -1,5 +1,5 @@
 from control_agent.evals.common import * 
-from control_agent.experiment_definitions.response_schema import StepResponse, CaseResponse
+from control_agent.evals.response_schema import StepResponse, CaseResponse
 from control_agent.evals.evaluators.required_tool_use_evaluator import RequiredToolUseEvaluator, ToolUseSpec
 
 OutputDataT = CaseResponse[StepResponse]

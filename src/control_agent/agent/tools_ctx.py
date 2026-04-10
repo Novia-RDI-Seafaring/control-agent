@@ -5,7 +5,7 @@ from control_agent.agent.docstrings import make_docstring
 console = Console()
 
 from typing import Literal
-from control_agent.experiment_definitions.response_schema import StepResponse, Signal
+from control_agent.evals.response_schema import StepResponse, Signal
 def control_help(ctx: RunContext[StateDeps[SimContext]], topic:Literal["fopdt_pi_description", "keywords", "lambda_tuning", "zn_pid_tuning", "seaborg"]) -> str:
     """
     Provides help on control tuning methods.

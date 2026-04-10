@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 # from typing import Dict, Any  # Not used
-from control_agent.experiment_definitions.response_schema import CaseResponse
-from control_agent.experiment_definitions.response_schema import StepResponse
+from control_agent.evals.response_schema import CaseResponse
+from control_agent.evals.response_schema import StepResponse
 from control_toolbox.tools.simulation import SimulationStepResponseProps, simulate_step_response
 from control_toolbox.tools.signals import StepProps, TimeRange
 from pydantic_evals.evaluators import (

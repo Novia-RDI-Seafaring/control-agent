@@ -1,6 +1,6 @@
 from dataclasses import dataclass
-from control_agent.experiment_definitions.response_schema import CaseResponse
-from control_agent.experiment_definitions.response_schema import SpecificaitonTuningResponse
+from control_agent.evals.response_schema import CaseResponse
+from control_agent.evals.response_schema import SpecificaitonTuningResponse
 from control_toolbox.tools.simulation import SimulationStepResponseProps
 from control_toolbox.tools.signals import StepProps, TimeRange
 from control_toolbox.tools.simulation import simulate_step_response
