@@ -1,4 +1,3 @@
-from ftplib import parse229
 from pydantic import BaseModel, Field, field_validator
 import numpy as np
 from scipy.optimize import root_scalar
