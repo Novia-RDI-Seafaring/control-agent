@@ -50,6 +50,8 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 cover/
+*copy.py
+data/
 
 # Translations
 *.mo
@@ -70,6 +72,7 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+models/fmus/aarch64-darwin/
 
 # PyBuilder
 .pybuilder/
@@ -211,3 +214,9 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+.sesskey
+
+data/reports/*
+
+.DS_Store

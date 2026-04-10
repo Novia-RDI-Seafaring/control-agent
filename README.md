@@ -1,151 +1,141 @@
 # control-agent
-An AI agent for performing control-oriented simulation tasks
 
-## Features
+An LLM-based agent for performing control-oriented simulation tasks. Developed as part of the research paper:
 
-- The package **`mcp-fmi-ecc26.zn`** contains methods that return *ground-truth tuning parameters* for the **Ziegler–Nichols** method.  
-- The package **`mcp-fmi-ecc26.lam`** contains methods that return *ground-truth tuning parameters* for the **Lambda-tuning** method.
+> **Agent-in-the-Loop: Using AI Agents to Perform Control-Oriented Simulation Tasks**
+> C. Bjorkskog, L. Jatta, M. Manngard — ECC 2026
+
+## Overview
+
+This repository contains the `control-agent` framework and benchmark experiments used to evaluate how effectively LLM-based agents can plan and execute multi-step control-engineering workflows such as system identification and PI controller tuning.
+
+The agent is built with [PydanticAI](https://github.com/pydantic/pydantic-ai) and uses [agent-control-toolbox](https://github.com/Novia-RDI-Seafaring/agent-control-toolbox) for simulation and analysis tools. Simulation models are packaged as Functional Mock-up Units (FMUs) following the [FMI standard](https://fmi-standard.org/).
 
 ## Installation
+
 ```bash
-# Clone and sync dependencies
-git clone <repository-url>
-cd mcp-fmi-ecc26
+git clone https://github.com/Novia-RDI-Seafaring/control-agent.git
+cd control-agent
 uv sync
 ```
 
-## Usage
+### Environment Setup
 
-### Command Line Interface
+Copy the example environment file and fill in your credentials:
 
-#### Ziegler-Nichols Method
 ```bash
-# Ziegler-Nichols tuning
-uv run ecc26 --K 1.0 --T 1.0 --L 1.0 --method zn
-
-# Default method (zn)
-uv run ecc26 --K 2.0 --T 1.5 --L 0.5
+cp env.example .env
 ```
 
-#### Lambda-Tuning Method
-```bash
-# Lambda-tuning with default lambda=2.0
-uv run ecc26 --K 1.0 --T 1.0 --L 1.0 --method lam
+Required variables:
+- `AZURE_OPENAI_ENDPOINT` — Your Azure OpenAI endpoint
+- `AZURE_OPENAI_API_KEY` — Your Azure OpenAI API key
+- `OPENAI_API_VERSION` — API version (e.g., `2024-12-01-preview`)
 
-# Lambda-tuning with custom lambda=3.0
-uv run ecc26 --K 1.0 --T 1.0 --L 1.0 --method lam --lam 3.0
+## Test Model
 
-# Get help
-uv run ecc26 --help
-```
-
-### Python API
-
-#### Ziegler-Nichols Method
-```python
-from mcp_fmi_ecc26 import FOPDT, ZieglerNicholsMethod
-
-# Create FOPDT system
-system = FOPDT(K=2.0, T=1.0, L=0.5)
-
-# Calculate Ziegler-Nichols parameters
-zn_method = ZieglerNicholsMethod(system)
-
-print(f"Ultimate Point: {zn_method.ultimate_point}")
-print(f"PI Controller: {zn_method.pi_controller}")
-```
-
-#### Lambda-Tuning Method
-```python
-from mcp_fmi_ecc26 import FOPDT
-from mcp_fmi_ecc26.lam import LambdaTuningMethod
-
-# Create FOPDT system
-system = FOPDT(K=2.0, T=1.0, L=0.5)
-
-# Calculate Lambda-tuning parameters with default lambda=2.0
-lam_method = LambdaTuningMethod(system, lam=2.0)
-
-print(f"PI Controller: {lam_method.pi_controller}")
-print(f"Lambda Parameter: {lam_method.lam}")
-```
-
-# Experiment Setup
- The agent can perform simulated experiments. It has access to access to tools that:
-- Reads the model descriptions  
-- Designs input signals  
-- Sets model parameters  
-- Run simulations
-
-## Simulation models
-We consider a **First-Order Plus Dead-Time (FOPDT)** system:
+The benchmark experiments use a **First-Order Plus Dead-Time (FOPDT)** plant model:
 
 $$
 G_\mathrm{p}(s) = \frac{K\,e^{-Ls}}{T s + 1}
 $$
 
-to which an ideal **PI controller** with output
+controlled by an ideal **PI controller**:
 
 $$
-u(t) = K_\mathrm{p}\left( e(t) + \frac{1}{T_\mathrm{i}}\int_0^te(\tau)\mathrm{d}\tau \right),
+u(t) = K_\mathrm{p}\left( e(t) + \frac{1}{T_\mathrm{i}}\int_0^te(\tau)\mathrm{d}\tau \right)
 $$
 
-with $e(t) = r(t) - y(t)$ with $r(t)$ the setpoint and $y(t)$ the measured output of the system. The controller and system are packaged as a [Functional Mock-Up Unit](https://fmi-standard.org/)
+The controller and plant are packaged as a single FMU with exposed parameters (`Kp`, `Ti`, `mode`) and hidden plant dynamics, preventing the agent from exploiting prior knowledge.
 
-The system and controller are packaged as a single **Functional Mock-up Unit (FMU)** that has the following two parameters, inputs, and outputs.
+## Benchmark Experiments
 
-### Parameters
+Six experiments of increasing complexity evaluate the agent's ability to chain tool calls:
 
+| # | Experiment | Description |
+|---|-----------|-------------|
+| 1 | `open_loop_step` | Simulate an open-loop step response |
+| 2 | `closed_loop_step` | Simulate a closed-loop step response with given PI parameters |
+| 3 | `step_response_analysis` | Closed-loop simulation + compute rise time, settling time, overshoot |
+| 4 | `system_identification` | Open-loop step test + identify FOPDT model parameters |
+| 5 | `lambda_tuning` | System identification + PI tuning via SIMC/lambda method |
+| 6 | `specification_tuning` | Iterative tuning to meet performance specifications |
 
-- **K**: Static gain of the plant
-- **T** : Time constant of the plant
-- **L**: DEat time of the plant
-- **K_c**: PI-controller proportional gain
-- **T_i**: PI-contoller integration time constant
-- **mode**:
-    - `manual`: The operator directly determines the control signal $u(t)$. This is, e.g., used when performing open-loop experiments.
-    - `automatic`: The PI control law is active and the controller computes the control signal $u(t)$. This is the normal operating mode and also used when performing closed-loop experiments.
+### Running Experiments
 
-### Inputs
-- **input**: Input signal when operating in open loop, i.e., `mode = "manual"`
-- **setpoint**: Controller setppiont signal when operating in closed loop, i.e., `model = "automatic"`
-- **measurement**: Measured output of the plant
+```bash
+# Run all experiments
+uv run eval
 
-### Outputs
-- **y** Measured output of the plant
-- **u** Control signal applied to the plant
+# Run a specific experiment
+uv run eval --experiment open_loop_step
+```
 
-## Tools
-- [MCP-FMI](https://github.com/Novia-RDI-Seafaring/mcp-fmi)
+## Ground-Truth Tuning Methods
 
-### Resources
-It is often useful to provide resources to an agent to help it understand how specific tools are expected to be used. Therefore, we have compiled documentation relevant to **PI controller tuning**.
+The package includes ground-truth implementations for validating agent results:
 
-- [`docs/zn_method.md`](docs/zn_method.md): Outlines the experimental procedure for the **Ziegler–Nichols closed-loop (ultimate gain) tuning method**.  
-- [`docs/lam_method.md`](docs/lam_method.md): Describes the experimental procedure for the **Lambda tuning method**.  
-- [`docs/seaborg.md`](docs/seaborg.md): Contains selected chapters from *Seborg, D. E., Edgar, T. F., Mellichamp, D. A., & Doyle III, F. J. (2016). Process Dynamics and Control*. John Wiley & Sons.
+```python
+from control_agent import FOPDT, ZieglerNicholsMethod
+from control_agent.lam import LambdaTuningMethod
 
-## The Agent
+system = FOPDT(K=2.0, T=1.0, L=0.5)
 
+# Ziegler-Nichols
+zn = ZieglerNicholsMethod(system)
+print(f"PI Controller: {zn.pi_controller}")
 
-## Experiment queries
+# Lambda tuning
+lam = LambdaTuningMethod(system, lam=2.0)
+print(f"PI Controller: {lam.pi_controller}")
+```
 
-| Query                                                                 | Expected Tool Calls                                                                                                  | Expected Output                                                                 |
-|-----------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------|
-| "Change the control parameters to K_p = 1.0 and T_i = 2.0"            | 1. `set_parameters`                                                                                                  | Controller updated with $K_p = 1.0$ and $T_i = 2.0$.                            |
-| "Simulate an open-loop step response with input change from 0 to 1"   | 1. Set controller to mode "manual" with `set_parameters`.<br>2. `generate_input`.<br>3. `simulate`.                   | Return open-loop step response.                                                 |
-| "Simulate a closed-loop step response with input change from 0 to 1"  | 1. Set controller to mode "automatic" with `set_parameters`.<br>2. `generate_input`.<br>3. `simulate`.                | Return closed-loop step response and performance metrics (rise time, overshoot).|
-| "Make a step response and identify a first-order plus dead time (FOPDT) model" | 1. `simulate` open-loop.<br>2. `fit_model` with FOPDT structure.<br>3. Extract $K$, $T$, and $L$ from step response.                     | FOPDT model: $G_p(s) = \dfrac{K e^{-Ls}}{Ts + 1}$.                              |
-| "Tune the PI controller with Lambda tuning lambda = 1.0"              | 1. Use identified $K$, $T$, $L$.<br>2. Compute $K_c = \dfrac{T}{K(\lambda + L)}$, $T_i = T$.<br>3. `set_parameters`. | Controller updated for $\lambda = 1.0$ tuning.                                  |
-| "Tune the PI controller with Lambda tuning for fast response"         | 1. Select $\lambda \approx L$.<br>2. Compute $K_c = \dfrac{T}{K(\lambda + L)}$, $T_i = T$.<br>3. `set_parameters`.   | Controller updated for fast-response tuning.                                    |
-| "Tune the PI controller with Lambda tuning for balanced response"     | 1. Select $\lambda = T$.<br>2. Compute $K_c = \dfrac{T}{K(\lambda + L)}$, $T_i = T$.<br>3. `set_parameters`.         | Controller updated for balanced-response tuning.                                |
-| "Tune the PI controller with Lambda tuning for robust response"       | 1. Select $\lambda \ge 2T$.<br>2. Compute $K_c = \dfrac{T}{K(\lambda + L)}$, $T_i = T$.<br>3. `set_parameters`.      | Controller updated for robust-response tuning.                                  |
-| "Tune the PI controller using Ziegler-Nichols closed-loop method"     | 1. Disable integral action ($T_i \to \infty$).<br>2. Increase $K_p$ until sustained oscillations → record $K_u$, $T_u$.<br>3. Compute $K_p = 0.45K_u$, $T_i = \dfrac{T_u}{1.2}$.<br>4. `set_parameters`. | Controller updated using Ziegler–Nichols closed-loop tuning.                    |
+### CLI
 
+```bash
+# Ziegler-Nichols tuning
+uv run ecc26 --K 1.0 --T 1.0 --L 1.0 --method zn
 
+# Lambda tuning
+uv run ecc26 --K 1.0 --T 1.0 --L 1.0 --method lam --lam 3.0
+```
 
+## Agent Resources
 
+Background materials provided to the agent as markdown resources:
 
+- [`docs/zn_method.md`](docs/zn_method.md) — Ziegler-Nichols closed-loop tuning procedure
+- [`docs/lam_method.md`](docs/lam_method.md) — Lambda tuning procedure
+- [`docs/seaborg.md`](docs/seaborg.md) — Selected chapters from Seborg et al. (2016), *Process Dynamics and Control*
 
+## Project Structure
 
+```
+src/control_agent/
+  agent/          # Agent framework (PydanticAI-based)
+  evals/          # Evaluation framework and experiment definitions
+  prompts/        # System prompts
+  cli.py          # CLI entry point
+  fopdt_sys.py    # FOPDT system model
+  zn.py           # Ziegler-Nichols ground truth
+  lam.py          # Lambda tuning ground truth
+models/fmus/      # FMU simulation models
+docs/             # Agent resources (markdown)
+```
 
+## License
+
+See [LICENSE](LICENSE) for details.
+
+## Citation
+
+If you use this work, please cite:
+
+```bibtex
+@inproceedings{bjorkskog2026agent,
+  title={Agent-in-the-Loop: Using AI Agents to Perform Control-Oriented Simulation Tasks},
+  author={Bj{\"o}rkskog, Christoffer and Jatta, Lamin and Manng{\aa}rd, Mikael},
+  booktitle={European Control Conference (ECC)},
+  year={2026}
+}
+```
