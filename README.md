@@ -9,7 +9,7 @@ An LLM-based agent for performing control-oriented simulation tasks. Developed a
 
 This repository contains the `control-agent` framework and benchmark experiments used to evaluate how effectively LLM-based agents can plan and execute multi-step control-engineering workflows such as system identification and PI controller tuning.
 
-The agent is built with [PydanticAI](https://github.com/pydantic/pydantic-ai) and uses [agent-control-toolbox](https://github.com/Novia-RDI-Seafaring/agent-control-toolbox) for simulation and analysis tools. Simulation models are packaged as Functional Mock-up Units (FMUs) following the [FMI standard](https://fmi-standard.org/).
+The agent is built with [PydanticAI](https://github.com/pydantic/pydantic-ai) and uses [agent-control-toolbox](https://github.com/Novia-RDI-Seafaring/agent-control-toolbox) for simulation and analysis tools. Simulation models are packaged as Functional Mock-up Units (FMUs) following the [FMI standard](https://fmi-standard.org/). The benchmark experiments reported in the paper were conducted using OpenAI's `gpt-5-mini` model deployed on Azure OpenAI.
 
 ## Installation
 
